@@ -16,6 +16,7 @@ The first attempt at a program to retrieve and store ticker data from many excha
 - Once we have a bunch of data collected and we can produce candles, we can begin working on our backtesting system
 - The ticker data will be stored in the following file structure:
 
+```
 Data/
   Bitfinex/
     BTCUSD/
@@ -28,4 +29,4 @@ Data/
   Poloniex/
     ...
   ...
-      
+```
