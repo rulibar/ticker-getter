@@ -1,3 +1,21 @@
+/*
+
+cycles through the pairs in the pairs.js file and...
+1. imports last data point
+2. checks how much time has passed since last data point
+3. if enough time has passed ask the exchange for ticker data
+4. save ticker data as a Tick class instance like
+   'ticker = new Tick("exchange", body)'
+5. export ticker data to the appropriate storage location like
+   '_write(ticker)'
+
+current focus:
+- Make sure the program properly cycles through pairs
+!- Make sure we can update pairs.js in real time and the following
+   iteration in scanner.js will include whatever pairs we added to pairs.js
+
+*/
+
 // basic vars
 n = 5 // minimum seconds between scans
 
