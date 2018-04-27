@@ -1,7 +1,7 @@
 # ticker-getter-1
 The first attempt at a program to retrieve and store ticker data from many exchanges
 
-# Files
+### Files
 - pairs.js contains the pairs (and exchanges) that we will track
 - scanner.js
   - is intended to run 24/7
@@ -10,7 +10,7 @@ The first attempt at a program to retrieve and store ticker data from many excha
   - converts the response to a consistent format
   - outputs the data to our storage system
   
-## Notes
+### Notes
 - Later on we will create a program to convert our stored ticker data to candle data
 - Once we are producing candle data in real time we can begin working on the live trading system
 - Once we have a bunch of data collected and we can produce candles, we can begin working on our backtesting system
