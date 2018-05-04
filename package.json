@@ -1,0 +1,20 @@
+{
+  "name": "ticker-getter-1",
+  "version": "0.1.0",
+  "description": "The first attempt at a program to retrieve and store ticker data from many exchanges",
+  "main": "scanner.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rulibar/ticker-getter-1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rulibar/ticker-getter-1/issues"
+  },
+  "homepage": "https://github.com/rulibar/ticker-getter-1#readme"
+}
