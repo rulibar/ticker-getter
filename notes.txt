@@ -1,0 +1,12 @@
+2018-05-04
+
+I'm thinking that for each exchange we can have 2 files. The first 'scanner-poloniex.js' will be run 24/7 and will..
+    - periodically receive the 'pairs-poloniex.json' file
+    - cycle through the pairs list
+    - receive ticker data
+    - convert to consisten format
+    - save to storage
+
+This way, if something happens which causes our program to break, it will only affect one exchange. Or if we need to update, we just need to stop collecting on one exchange at a time. And we can always update the pairs we're following without interrupting the scanner.
+
+This will be what I'll be working on for now. I'll create an Archives/ directory and store the old scanner.js and pairs.js there for reference.
