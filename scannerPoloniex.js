@@ -1,3 +1,3 @@
 /*
-polo-scanner.js
+scannerPoloniex.js
 */
