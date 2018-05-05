@@ -4,20 +4,29 @@ scannerPoloniex.js
 
 // imports
 const fs = require('fs')
+const Poloniex = require('poloniex-api-node')
 
 // vars
 const interval = 15 // seconds between checks
+const poloniex = new Poloniex()
 var startDate = (new Date()).getTime()
 var todayDate
 var data
 
 // functions
 function _getTick () {
-    todayDate = (new Date()).getTime()
-    data = JSON.parse(fs.readFileSync('pairsPoloniex.json'))
-    console.log("Pairs recieved")
-    secondsSinceStart = (todayDate - startDate)/1000
-    console.log(JSON.stringify(data))
+    poloniex.returnTicker((err, ticker) => {
+        if (err) throw err
+        pairs = JSON.parse(fs.readFileSync('pairsPoloniex.json'))
+        for (base in pairs) {
+            for (i in pairs[base]) {
+                asset = pairs[base][i]
+                pair = base+"_"+asset
+                console.log(pair)
+                console.log(ticker[pair])
+            }
+        }
+    })
 }
 
 // main
