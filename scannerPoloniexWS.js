@@ -68,55 +68,49 @@ _writeCandle = function () {
         tradeData[currencyPair] = trades[currencyPair]
         trades[currencyPair] = []
     }
-    // cycle through subs
+    // cycle through subs, get candle data
     for (i in subs) {
         let currencyPair = subs[i]
         // get timestamps
         let ts1 = tsLast[currencyPair]
         let ts2 = (new Date()).getTime()
-        console.log(currencyPair+" seconds since last: "+(ts2-ts1)/1000)
-        // get trades for this pair only
-        let trades = tradeData[currencyPair]
-        if (trades.length == 0) {
-            continue
-        }
         tsLast[currencyPair] = ts2
-        console.log(trades)
-        let ohlc = [
-            trades[0].price,
-            trades[0].price,
-            trades[0].price,
-            trades[trades.length - 1].price
-        ]
-    }
-    // get ohlc
-    /*
-    for (currencyPair in tradeData) {
-        //console.log("Finding ohlc for "+currencyPair)
-        let _trades = tradeData[currencyPair]
-        let _len = _trades.length
-        let _ohlc = [
-            _trades[0].price,
-            _trades[0].price,
-            _trades[0].price,
-            _trades[_len - 1].price
-        ]
-        for (i in _trades) {
-            let _trade = _trades[i]
-            if (_trade.price > _ohlc[1]) {
-                _ohlc[1] = _trade.price
-            }
-            if (_trade.price < _ohlc[2]) {
-                _ohlc[2] = _trade.price
+        // get trades for this pair only
+        let tradeList = tradeData[currencyPair]
+        // get ohlc and volume
+        let ohlc = [0, 0, 0, 0]
+        let volume = 0
+        if (tradeList.length == 0) {
+            if (priceLast[currencyPair] == 0) continue
+            let price = priceLast[currencyPair]
+            ohlc = [price, price, price, price]
+        } else {
+            ohlc = [
+                tradeList[0].price,
+                tradeList[0].price,
+                tradeList[0].price,
+                tradeList[tradeList.length - 1].price
+            ]
+            for (let j in tradeList) {
+                if (tradeList[j].price > ohlc[1]) {
+                    ohlc[1] = tradeList[j].price
+                }
+                if (tradeList[j].price < ohlc[2]) {
+                    ohlc[2] = tradeList[j].price
+                }
+                volume += tradeList[j].amount
             }
         }
-        console.log("ohlc: "+_ohlc)
+        // get candle string
+        let candle = ts1+","
+        candle += ts2+","
+        for (j in ohlc) {
+            candle += ohlc[j]+","
+        }
+        candle += volume
+        console.log("Candle recieved for "+currencyPair)
+        console.log(candle)
     }
-    */
-
-    //console.log("Writing candle")
-    //console.log(tradeData)
-    //console.log(tsLast)
 }
 
 // initialize websocket
