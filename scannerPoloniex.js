@@ -1,5 +1,5 @@
 /*
-scannerPoloniexWS.js
+scannerPoloniex.js
 */
 
 // imports
