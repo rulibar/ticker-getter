@@ -134,10 +134,15 @@ poloniex.on('message', (channelName, data, seq) => {
     try {
         for (i in data) {
             if (data[i].type == "newTrade") {
-                trades[channelName].push({
-                    amount: parseFloat(data[i].data.amount),
-                    price: parseFloat(data[i].data.rate)
+                let currencyPair = channelName
+                let trade = data[i].data
+                let amount = parseFloat(trade.amount)
+                let price = parseFloat(trade.rate)
+                trades[currencyPair].push({
+                    amount: amount,
+                    price: price
                 })
+                priceLast[currencyPair] = price
             }
         }
     } catch (err) {
