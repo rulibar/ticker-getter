@@ -1,19 +1,5 @@
 /*
-scannerPoloniex.js
-
-- open poloniex websocket
-- get pairs
-- every interval seconds, write candle and get pairs again
-    - candle data will be compiled from a list of trades for each pair
-    - trades are a set of amount and price
-        - Ex: trades['BTC_ETH'][0].amount
-          trades = {
-              'BTC_ETH': [
-                  {amount: 1, price: 2},
-                  {amount: 3, price: 4}
-              ]
-          }
-
+scannerPoloniexWS.js
 */
 
 // imports
@@ -21,9 +7,10 @@ const fs = require('fs')
 const Poloniex = require('poloniex-api-node')
 
 // vars
+const hr = "============================================="
 const interval = 15 // seconds between updating pairs
 const poloniex = new Poloniex()
-const tsStart = (new Date()).getTime()/1000
+//const tsStart = (new Date()).getTime()/1000
 var tsLast = {} // object storing last update for each pair
 var trades = {} // object containing lists of trades used to compile the next candles
 var subs = [] // list of currency pairs that im currently subscribed too
@@ -64,21 +51,43 @@ _getSubs = function () {
             subs.push(newSubs[i])
         }
     }
-    //console.log(JSON.stringify(trades))
 }
 
 _writeCandle = function () {
-    let ts = (new Date()).getTime()
-    // backup and reset trades
     let tradesData = {}
+    // backup trades, reset trades
     for (currencyPair in trades) {
         tradesData[currencyPair] = trades[currencyPair]
-        trades[currencyPair] = []
+        if (subs.indexOf(currencyPair) >= 0) {
+            trades[currencyPair] = []
+        } else {
+            delete trades[currencyPair]
+        }
     }
-
+    // cycle through subs
+    for (i in subs) {
+        let currencyPair = subs[i]
+        // get timestamps
+        let ts1 = tsLast[currencyPair]
+        let ts2 = (new Date()).getTime()
+        console.log(currencyPair+" seconds since last: "+(ts2-ts1)/1000)
+        tsLast[currencyPair] = ts2
+    }
+    /*
+    for (currencyPair in trades) {
+        // backup and reset trades
+        tradesData[currencyPair] = trades[currencyPair]
+        trades[currencyPair] = []
+        // get timestamps
+        let ts1 = tsLast[currencyPair]
+        let ts2 = (new Date()).getTime()
+        console.log("Seconds since last: "+(ts2-ts1)/1000)
+        tsLast[currencyPair] = ts2
+        // get ohlc
+    }*/
     // get ohlc
     for (currencyPair in tradesData) {
-        console.log("Finding ohlc for "+currencyPair)
+        //console.log("Finding ohlc for "+currencyPair)
         let _trades = tradesData[currencyPair]
         let _len = _trades.length
         /*
@@ -141,7 +150,6 @@ poloniex.on('error', (err) => {
 poloniex.openWebSocket({version: 2})
 
 // write candle data
-hr = "=========================================="
 console.log(hr)
 setInterval(() => {
     console.log(hr)
