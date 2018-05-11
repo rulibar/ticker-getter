@@ -1,0 +1,13 @@
+Format for data entry:
+
+../Data/Exchange/PAIR
+Ex:
+../Data/Bitfinex/BTCUSD/
+    180501-180801.csv
+    180801-181101.csv
+    ...
+
+timestamp1,timestamp2,open,high,low,close,volume
+
+timestamp 1: The js ts when we started data collection
+timestamp 2: The js ts when we stopped collecting data for this candle
