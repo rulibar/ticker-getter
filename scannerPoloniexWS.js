@@ -10,8 +10,9 @@ const Poloniex = require('poloniex-api-node')
 const hr = "============================================="
 const interval = 15 // seconds between updating pairs
 const poloniex = new Poloniex()
-//const tsStart = (new Date()).getTime()/1000
-var tsLast = {} // object storing last update for each pair
+const tsStart = (new Date()).getTime()/1000
+var tsLast = {} // object storing last timestamp for each pair
+var priceLast = {} // object storing last price for each pair
 var trades = {} // object containing lists of trades used to compile the next candles
 var subs = [] // list of currency pairs that im currently subscribed too
 
@@ -34,21 +35,25 @@ _getSubs = function () {
     }
     // unsub outdated subs
     for (i in subs) {
-        if (newSubs.indexOf(subs[i]) < 0) {
-            console.log("Removing subscription to "+subs[i]+".")
-            delete tsLast[subs[i]]
-            poloniex.unsubscribe(subs[i])
+        let currencyPair = subs[i]
+        if (newSubs.indexOf(currencyPair) < 0) {
+            console.log("Removing subscription to "+currencyPair+".")
+            delete tsLast[currencyPair]
+            delete priceLast[currencyPair]
+            poloniex.unsubscribe(currencyPair)
             subs.splice(i)
         }
     }
     // add new subs
     for (i in newSubs) {
-        if (subs.indexOf(newSubs[i]) < 0) {
-            console.log("Adding subscription to "+newSubs[i]+".")
-            trades[newSubs[i]] = []
-            tsLast[newSubs[i]] = (new Date()).getTime()
-            poloniex.subscribe(newSubs[i])
-            subs.push(newSubs[i])
+        let currencyPair = newSubs[i]
+        if (subs.indexOf(currencyPair) < 0) {
+            console.log("Subscribed to "+currencyPair+".")
+            trades[currencyPair] = []
+            tsLast[currencyPair] = (new Date()).getTime()
+            priceLast[currencyPair] = 0
+            poloniex.subscribe(currencyPair)
+            subs.push(currencyPair)
         }
     }
 }
@@ -71,26 +76,26 @@ _writeCandle = function () {
         let ts1 = tsLast[currencyPair]
         let ts2 = (new Date()).getTime()
         console.log(currencyPair+" seconds since last: "+(ts2-ts1)/1000)
+        // get trades for this pair only
+        let trades = tradesData[currencyPair]
+        if (trades.length == 0) {
+            continue
+        }
         tsLast[currencyPair] = ts2
+        console.log(trades)
+        let ohlc = [
+            trades[0].price,
+            trades[0].price,
+            trades[0].price,
+            trades[trades.length - 1].price
+        ]
     }
-    /*
-    for (currencyPair in trades) {
-        // backup and reset trades
-        tradesData[currencyPair] = trades[currencyPair]
-        trades[currencyPair] = []
-        // get timestamps
-        let ts1 = tsLast[currencyPair]
-        let ts2 = (new Date()).getTime()
-        console.log("Seconds since last: "+(ts2-ts1)/1000)
-        tsLast[currencyPair] = ts2
-        // get ohlc
-    }*/
     // get ohlc
+    /*
     for (currencyPair in tradesData) {
         //console.log("Finding ohlc for "+currencyPair)
         let _trades = tradesData[currencyPair]
         let _len = _trades.length
-        /*
         let _ohlc = [
             _trades[0].price,
             _trades[0].price,
@@ -107,12 +112,12 @@ _writeCandle = function () {
             }
         }
         console.log("ohlc: "+_ohlc)
-        */
     }
+    */
 
     //console.log("Writing candle")
     //console.log(tradesData)
-    console.log(tsLast)
+    //console.log(tsLast)
 }
 
 // initialize websocket
