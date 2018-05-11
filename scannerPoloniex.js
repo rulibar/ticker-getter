@@ -18,10 +18,7 @@ var subs = [] // list of currency pairs that im currently subscribed too
 
 // functions
 _getSubs = function () {
-    // update subs var and poloniex subscriptions from json file
-    // init trades[currencyPair] if a new pair is added, don't delete until next write cycle
-    // sets priceLast to 0 for new pairs, delete for removed pairs
-    // sets tsLast to current time for new pairs, delete for removed pairs
+    // get pairs from json
     let pairs = JSON.parse(fs.readFileSync('pairsPoloniex.json'))
     // get newSubs
     let newSubs = []
@@ -44,7 +41,7 @@ _getSubs = function () {
             delete trades[currencyPair]
             delete tsLast[currencyPair]
             delete priceLast[currencyPair]
-            subs.splice(i)
+            subs.splice(i, 1)
         }
     }
     // add new subs
@@ -61,7 +58,7 @@ _getSubs = function () {
     }
 }
 
-_writeCandle = function () {
+_saveCandles = function () {
     let tradeData = {}
     // backup trades, reset trades
     for (currencyPair in trades) {
@@ -102,14 +99,12 @@ _writeCandle = function () {
             }
         }
         // get candle string
-        let candle = ts1+","
-        candle += ts2+","
+        let candle = ts1+","+ts2+","
         for (j in ohlc) {
             candle += ohlc[j]+","
         }
         candle += volume
-        console.log("Candle recieved for "+currencyPair)
-        console.log(candle)
+        // sanity test on candle data
     }
 }
 
@@ -156,6 +151,6 @@ poloniex.openWebSocket({version: 2})
 console.log(hr)
 setInterval(() => {
     console.log(hr)
-    _writeCandle()
+    _saveCandles()
     _getSubs()
 }, interval*1000)
