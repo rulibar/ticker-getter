@@ -18,8 +18,10 @@ var subs = [] // list of currency pairs that im currently subscribed too
 
 // functions
 _getSubs = function () {
-    // update subscriptions from json file
-    // does not reset trades, but if new pair is added, initialize it in trades
+    // update subs var and poloniex subscriptions from json file
+    // init trades[currencyPair] if a new pair is added, don't delete until next write cycle
+    // sets priceLast to 0 for new pairs, delete for removed pairs
+    // sets tsLast to current time for new pairs, delete for removed pairs
     let pairs = JSON.parse(fs.readFileSync('pairsPoloniex.json'))
     // get newSubs
     let newSubs = []
@@ -38,9 +40,10 @@ _getSubs = function () {
         let currencyPair = subs[i]
         if (newSubs.indexOf(currencyPair) < 0) {
             console.log("Removing subscription to "+currencyPair+".")
+            poloniex.unsubscribe(currencyPair)
+            delete trades[currencyPair]
             delete tsLast[currencyPair]
             delete priceLast[currencyPair]
-            poloniex.unsubscribe(currencyPair)
             subs.splice(i)
         }
     }
@@ -59,15 +62,11 @@ _getSubs = function () {
 }
 
 _writeCandle = function () {
-    let tradesData = {}
+    let tradeData = {}
     // backup trades, reset trades
     for (currencyPair in trades) {
-        tradesData[currencyPair] = trades[currencyPair]
-        if (subs.indexOf(currencyPair) >= 0) {
-            trades[currencyPair] = []
-        } else {
-            delete trades[currencyPair]
-        }
+        tradeData[currencyPair] = trades[currencyPair]
+        trades[currencyPair] = []
     }
     // cycle through subs
     for (i in subs) {
@@ -77,7 +76,7 @@ _writeCandle = function () {
         let ts2 = (new Date()).getTime()
         console.log(currencyPair+" seconds since last: "+(ts2-ts1)/1000)
         // get trades for this pair only
-        let trades = tradesData[currencyPair]
+        let trades = tradeData[currencyPair]
         if (trades.length == 0) {
             continue
         }
@@ -92,9 +91,9 @@ _writeCandle = function () {
     }
     // get ohlc
     /*
-    for (currencyPair in tradesData) {
+    for (currencyPair in tradeData) {
         //console.log("Finding ohlc for "+currencyPair)
-        let _trades = tradesData[currencyPair]
+        let _trades = tradeData[currencyPair]
         let _len = _trades.length
         let _ohlc = [
             _trades[0].price,
@@ -116,7 +115,7 @@ _writeCandle = function () {
     */
 
     //console.log("Writing candle")
-    //console.log(tradesData)
+    //console.log(tradeData)
     //console.log(tsLast)
 }
 
