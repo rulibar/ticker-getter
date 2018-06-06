@@ -119,7 +119,14 @@ _saveCandles = function () {
         candle += volume
         // get path
         pair = _currencyPairToPair(currencyPair)
-        path = "./Data/"+"Poloniex"+"/"+pair+"/"
+        path = ""
+        // make sure path exists one level at a time
+        items = ["./Data/", "Poloniex/", pair+"/"]
+        for (i in items) {
+            path += items[i]
+            if (!fs.existsSync(path)) {fs.mkdirSync(path)}
+        }
+        path += "data.csv/"
         // sanity test on candle data
         console.log(path)
         console.log(candle)
