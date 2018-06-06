@@ -17,6 +17,18 @@ var trades = {} // object containing lists of trades used to compile the next ca
 var subs = [] // list of currency pairs that im currently subscribed too
 
 // functions
+_currencyPairToPair = function (currencyPair) {
+    currencyPairArr = currencyPair.split("_")
+    if (currencyPairArr.length != 2) {
+        err = "Error in _currencyPairToPair: "
+        err += "currencyPair not recognized '"+currencyPair+"'"
+        console.log(err)
+        return currencyPair
+    }
+    pair = currencyPairArr[1]+currencyPairArr[0]
+    return pair
+}
+
 _getSubs = function () {
     // update subscriptions from json file
     // - get pairs from json
@@ -105,7 +117,11 @@ _saveCandles = function () {
         let candle = ts1+","+ts2+","
         for (j in ohlc) {candle += ohlc[j]+","}
         candle += volume
+        // get path
+        pair = _currencyPairToPair(currencyPair)
+        path = "./Data/"+"Poloniex"+"/"+pair+"/"
         // sanity test on candle data
+        console.log(path)
         console.log(candle)
     }
 }
