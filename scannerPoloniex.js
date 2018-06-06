@@ -8,9 +8,9 @@ const Poloniex = require('poloniex-api-node')
 
 // vars
 const hr = "============================================="
-const interval = 15 // seconds between updating pairs
+const interval = 15 // candle size in seconds
 const poloniex = new Poloniex()
-const tsStart = (new Date()).getTime()/1000
+const tsStart = (new Date()).getTime() // starting time in ms
 var tsLast = {} // object storing last timestamp for each pair
 var priceLast = {} // object storing last price for each pair
 var trades = {} // object containing lists of trades used to compile the next candles
@@ -18,9 +18,10 @@ var subs = [] // list of currency pairs that im currently subscribed too
 
 // functions
 _getSubs = function () {
-    // get pairs from json
+    // update subscriptions from json file
+    // - get pairs from json
     let pairs = JSON.parse(fs.readFileSync('pairsPoloniex.json'))
-    // get newSubs
+    // - get newSubs from pairs
     let newSubs = []
     for (base in pairs) {
         for (i in pairs[base]) {
@@ -32,7 +33,8 @@ _getSubs = function () {
             }
         }
     }
-    // unsub outdated subs
+    // - compare newSubs to subs
+    // -- unsub outdated subs
     for (i in subs) {
         let currencyPair = subs[i]
         if (newSubs.indexOf(currencyPair) < 0) {
@@ -44,7 +46,7 @@ _getSubs = function () {
             subs.splice(i, 1)
         }
     }
-    // add new subs
+    // -- add new subs
     for (i in newSubs) {
         let currencyPair = newSubs[i]
         if (subs.indexOf(currencyPair) < 0) {
@@ -59,13 +61,14 @@ _getSubs = function () {
 }
 
 _saveCandles = function () {
+    // convert trade data to candles and save to storage
+    // - backup trades, reset trades
     let tradeData = {}
-    // backup trades, reset trades
     for (currencyPair in trades) {
         tradeData[currencyPair] = trades[currencyPair]
         trades[currencyPair] = []
     }
-    // cycle through subs, get candle data
+    // - cycle through subs
     for (i in subs) {
         let currencyPair = subs[i]
         // get timestamps
@@ -98,13 +101,12 @@ _saveCandles = function () {
                 volume += tradeList[j].amount
             }
         }
-        // get candle string
+        // get candle
         let candle = ts1+","+ts2+","
-        for (j in ohlc) {
-            candle += ohlc[j]+","
-        }
+        for (j in ohlc) {candle += ohlc[j]+","}
         candle += volume
         // sanity test on candle data
+        console.log(candle)
     }
 }
 
@@ -147,9 +149,11 @@ poloniex.on('error', (err) => {
 
 poloniex.openWebSocket({version: 2})
 
-// write candle data
+// script
 console.log(hr)
+// - messages from initializing WS will appear here
 setInterval(() => {
+    // save candles and refresh subscriptions every interval
     console.log(hr)
     _saveCandles()
     _getSubs()
