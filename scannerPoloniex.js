@@ -132,13 +132,13 @@ _saveCandles = function () {
         path += "data.csv"
         // append candle to path
         fs.appendFileSync(path, candle+"\n")
+        console.log(`${pair}: Candle successfully compiled and stored.`)
     }
 }
 
 // initialize websocket
 poloniex.on('open', (msg) => {
     console.log("Poloniex WebSocket open.")
-    _getSubs()
 })
 
 poloniex.on('close', (reason) => {
@@ -166,16 +166,22 @@ poloniex.on('message', (channelName, data, seq) => {
 })
 
 poloniex.on('error', (err) => {
+    console.log(`Error: '${err}'`)
     if (typeof(err) != "string") {
         err = JSON.stringify(err)
+    } else {
+        if (err.indexOf("statusCode: 522") > -1) {
+            console.log("WS failed to open. Retrying...")
+            poloniex.openWebSocket({version: 2})
+        }
     }
-    console.log("Warning: "+err)
 })
-
-poloniex.openWebSocket({version: 2})
 
 // script
 console.log(hr)
+_getSubs()
+poloniex.openWebSocket({version: 2})
+
 // - messages from initializing WS will appear here
 setInterval(() => {
     // save candles and refresh subscriptions every interval
