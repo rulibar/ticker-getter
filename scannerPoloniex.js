@@ -24,43 +24,45 @@ _outLog = function () {
         timeRunning = ts - TS_START
         daysRunning = timeRunning / (1000 * 60 * 60 * 24)
         timeSinceLast = ts - tsLastLog
+    // get hr
     if (tsLastLog == 0) {
         hr = `${hr} ticker getter 1 started up ${hr}`
     } else {
         hr += "##"
         if (timeSinceLast/1000 > LOG_INTERVAL) {
             hr = `${hr} days since start: ${daysRunning.toFixed(2)} ${hr}`
-        } else {
-            return
-        }
+        } else return
     }
+    // output log and update tsLastLog
     console.log(hr)
     tsLastLog = ts
 }
 
 _currencyPairToPair = function (currencyPair) {
-    currencyPairArr = currencyPair.split("_")
+    let currencyPairArr = currencyPair.split("_"),
+        pair = ""
+    // make sure pair arr has 2 elements
     if (currencyPairArr.length != 2) {
-        err = "Error in _currencyPairToPair: "
-        err += "currencyPair not recognized '" + currencyPair + "'"
+        let err = "Error in _currencyPairToPair: "
+        err += `currencyPair not recognized '${currencyPair}'`
         console.log(err)
-        return currencyPair
+        return pair
     }
-    pair = currencyPairArr[1] + currencyPairArr[0]
+    // return pair
+    pair += currencyPairArr[1] + currencyPairArr[0]
     return pair
 }
 
 _getSubs = function () {
     // update subscriptions from json file
-    // - get pairs from json
-    let pairs = JSON.parse(fs.readFileSync('pairsPoloniex.json'))
-    // - get newSubs from pairs
-    let newSubs = []
+    // - get pairs from json then newSubs from pairs
+    let pairs = JSON.parse(fs.readFileSync('pairsPoloniex.json')),
+        newSubs = []
     for (base in pairs) {
         for (i in pairs[base]) {
-            let asset = pairs[base][i]
-            let pair = asset+base
-            let currencyPair = base+"_"+asset
+            let asset = pairs[base][i],
+                pair = asset+base,
+                currencyPair = base+"_"+asset
             if (newSubs.indexOf(currencyPair) < 0) {
                 newSubs.push(currencyPair)
             }
@@ -69,10 +71,10 @@ _getSubs = function () {
     // - compare newSubs to subs
     // -- unsub outdated subs
     for (i in subs) {
-        let currencyPair = subs[i]
-        let pair = _currencyPairToPair(currencyPair)
+        let currencyPair = subs[i],
+            pair = _currencyPairToPair(currencyPair)
         if (newSubs.indexOf(currencyPair) < 0) {
-            console.log("Removing subscription to " + pair + ".")
+            console.log(`Removing subscription to ${pair}.`)
             POLONIEX.unsubscribe(currencyPair)
             delete trades[currencyPair]
             delete tsLast[currencyPair]
@@ -82,10 +84,10 @@ _getSubs = function () {
     }
     // -- add new subs
     for (i in newSubs) {
-        let currencyPair = newSubs[i]
-        let pair = _currencyPairToPair(currencyPair)
+        let currencyPair = newSubs[i],
+            pair = _currencyPairToPair(currencyPair)
         if (subs.indexOf(currencyPair) < 0) {
-            console.log("Subscribed to " + pair + ".")
+            console.log(`Subscribed to ${pair}.`)
             trades[currencyPair] = []
             tsLast[currencyPair] = (new Date()).getTime()
             priceLast[currencyPair] = 0
@@ -105,16 +107,17 @@ _saveCandles = function () {
     }
     // - cycle through subs
     for (i in subs) {
-        let currencyPair = subs[i]
-        // get timestamps
-        let ts1 = tsLast[currencyPair]
-        let ts2 = (new Date()).getTime()
+        let currencyPair = subs[i],
+            // get timestamps
+            ts1 = tsLast[currencyPair],
+            ts2 = (new Date()).getTime(),
+            // get trades for this pair only
+            tradeList = tradeData[currencyPair],
+            // initialize ohlc and volume
+            ohlc = [0, 0, 0, 0],
+            volume = 0
         tsLast[currencyPair] = ts2
-        // get trades for this pair only
-        let tradeList = tradeData[currencyPair]
         // get ohlc and volume
-        let ohlc = [0, 0, 0, 0]
-        let volume = 0
         if (tradeList.length == 0) {
             if (priceLast[currencyPair] == 0) continue
             let price = priceLast[currencyPair]
@@ -137,17 +140,17 @@ _saveCandles = function () {
             }
         }
         // get candle
-        let candle = ts1 + "," + ts2 + ","
-        for (j in ohlc) {candle += ohlc[j] + ","}
+        let candle = `${ts1},${ts2},`
+        for (j in ohlc) {candle += `${ohlc[j]},`}
         candle += volume
         // get path
-        let pair = _currencyPairToPair(currencyPair)
-        let date = new Date(ts2)
-        let month = date.getMonth()
-        let year = date.getFullYear()
-        let path = ""
+        let pair = _currencyPairToPair(currencyPair),
+            date = new Date(ts2),
+            month = date.getMonth(),
+            year = date.getFullYear(),
+            path = "",
+            items = ["Data/", "Poloniex/", `${pair}/`, `${year}/`, `${month}/`]
         // make sure path exists one level at a time
-        let items = ["Data/", "Poloniex/", pair + "/", year + "/", month + "/"]
         for (i in items) {
             path += items[i]
             if (!fs.existsSync(path)) {fs.mkdirSync(path)}
@@ -172,10 +175,10 @@ POLONIEX.on('message', (channelName, data, seq) => {
     try {
         for (i in data) {
             if (data[i].type == "newTrade") {
-                let currencyPair = channelName
-                let trade = data[i].data
-                let amount = parseFloat(trade.amount)
-                let price = parseFloat(trade.rate)
+                let currencyPair = channelName,
+                    trade = data[i].data,
+                    amount = parseFloat(trade.amount),
+                    price = parseFloat(trade.rate)
                 trades[currencyPair].push({
                     amount: amount,
                     price: price
@@ -183,9 +186,7 @@ POLONIEX.on('message', (channelName, data, seq) => {
                 priceLast[currencyPair] = price
             }
         }
-    } catch (err) {
-        console.log(err)
-    }
+    } catch (err) {console.log(err)}
 })
 
 POLONIEX.on('error', (err) => {
@@ -195,7 +196,14 @@ POLONIEX.on('error', (err) => {
     } else {
         if (err.indexOf("statusCode: 522") > -1) {
             console.log("WS failed to open. Retrying...")
-            POLONIEX.openWebSocket({version: 2})
+            setTimeout(() => {
+                POLONIEX.openWebSocket({version: 2})
+            }, 1000)
+        } else if (err.indexOf("statusCode: 502") > -1) {
+            console.log("WS failed to open. Retrying...")
+            setTimeout(() => {
+                POLONIEX.openWebSocket({version: 2})
+            }, 1000)
         }
     }
 })
