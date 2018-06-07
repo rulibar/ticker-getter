@@ -49,8 +49,9 @@ _getSubs = function () {
     // -- unsub outdated subs
     for (i in subs) {
         let currencyPair = subs[i]
+        let pair = _currencyPairToPair(currencyPair)
         if (newSubs.indexOf(currencyPair) < 0) {
-            console.log("Removing subscription to "+currencyPair+".")
+            console.log("Removing subscription to "+pair+".")
             poloniex.unsubscribe(currencyPair)
             delete trades[currencyPair]
             delete tsLast[currencyPair]
@@ -61,8 +62,9 @@ _getSubs = function () {
     // -- add new subs
     for (i in newSubs) {
         let currencyPair = newSubs[i]
+        let pair = _currencyPairToPair(currencyPair)
         if (subs.indexOf(currencyPair) < 0) {
-            console.log("Subscribed to "+currencyPair+".")
+            console.log("Subscribed to "+pair+".")
             trades[currencyPair] = []
             tsLast[currencyPair] = (new Date()).getTime()
             priceLast[currencyPair] = 0
