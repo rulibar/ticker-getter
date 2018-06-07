@@ -3,13 +3,13 @@ scannerPoloniex.js
 */
 
 // imports
-const fs = require('fs')
-const Poloniex = require('poloniex-api-node')
+var fs = require('fs')
+var Poloniex = require('poloniex-api-node')
 
 // vars
-const interval = 15 // candle size in seconds
-const poloniex = new Poloniex()
-const tsStart = (new Date()).getTime() // starting time in ms
+const CANDLE_SIZE = 15 // candle size in seconds
+const POLONIEX = new Poloniex()
+const TS_START = (new Date()).getTime() // starting time in ms
 var tsLast = {} // object storing last timestamp for each pair
 var priceLast = {} // object storing last price for each pair
 var trades = {} // object containing lists of trades used to compile the next candles
@@ -25,11 +25,11 @@ _currencyPairToPair = function (currencyPair) {
     currencyPairArr = currencyPair.split("_")
     if (currencyPairArr.length != 2) {
         err = "Error in _currencyPairToPair: "
-        err += "currencyPair not recognized '"+currencyPair+"'"
+        err += "currencyPair not recognized '" + currencyPair + "'"
         console.log(err)
         return currencyPair
     }
-    pair = currencyPairArr[1]+currencyPairArr[0]
+    pair = currencyPairArr[1] + currencyPairArr[0]
     return pair
 }
 
@@ -55,8 +55,8 @@ _getSubs = function () {
         let currencyPair = subs[i]
         let pair = _currencyPairToPair(currencyPair)
         if (newSubs.indexOf(currencyPair) < 0) {
-            console.log("Removing subscription to "+pair+".")
-            poloniex.unsubscribe(currencyPair)
+            console.log("Removing subscription to " + pair + ".")
+            POLONIEX.unsubscribe(currencyPair)
             delete trades[currencyPair]
             delete tsLast[currencyPair]
             delete priceLast[currencyPair]
@@ -68,11 +68,11 @@ _getSubs = function () {
         let currencyPair = newSubs[i]
         let pair = _currencyPairToPair(currencyPair)
         if (subs.indexOf(currencyPair) < 0) {
-            console.log("Subscribed to "+pair+".")
+            console.log("Subscribed to " + pair + ".")
             trades[currencyPair] = []
             tsLast[currencyPair] = (new Date()).getTime()
             priceLast[currencyPair] = 0
-            poloniex.subscribe(currencyPair)
+            POLONIEX.subscribe(currencyPair)
             subs.push(currencyPair)
         }
     }
@@ -120,8 +120,8 @@ _saveCandles = function () {
             }
         }
         // get candle
-        let candle = ts1+","+ts2+","
-        for (j in ohlc) {candle += ohlc[j]+","}
+        let candle = ts1 + "," + ts2 + ","
+        for (j in ohlc) {candle += ohlc[j] + ","}
         candle += volume
         // get path
         let pair = _currencyPairToPair(currencyPair)
@@ -130,28 +130,28 @@ _saveCandles = function () {
         let year = date.getFullYear()
         let path = ""
         // make sure path exists one level at a time
-        let items = ["Data/", "Poloniex/", pair+"/", year+"/", month+"/"]
+        let items = ["Data/", "Poloniex/", pair + "/", year + "/", month + "/"]
         for (i in items) {
             path += items[i]
             if (!fs.existsSync(path)) {fs.mkdirSync(path)}
         }
         path += "data.csv"
         // append candle to path
-        fs.appendFileSync(path, candle+"\n")
+        fs.appendFileSync(path, candle + "\n")
     }
 }
 
 // initialize websocket
-poloniex.on('open', (msg) => {
+POLONIEX.on('open', (msg) => {
     console.log("Poloniex WebSocket open.")
     console.log("Now collecting and storing candle data.")
 })
 
-poloniex.on('close', (reason) => {
+POLONIEX.on('close', (reason) => {
     console.log("Poloniex WebSocket closed.")
 })
 
-poloniex.on('message', (channelName, data, seq) => {
+POLONIEX.on('message', (channelName, data, seq) => {
     try {
         for (i in data) {
             if (data[i].type == "newTrade") {
@@ -171,14 +171,14 @@ poloniex.on('message', (channelName, data, seq) => {
     }
 })
 
-poloniex.on('error', (err) => {
+POLONIEX.on('error', (err) => {
     console.log(`Error: '${err}'`)
     if (typeof(err) != "string") {
         err = JSON.stringify(err)
     } else {
         if (err.indexOf("statusCode: 522") > -1) {
             console.log("WS failed to open. Retrying...")
-            poloniex.openWebSocket({version: 2})
+            POLONIEX.openWebSocket({version: 2})
         }
     }
 })
@@ -186,11 +186,11 @@ poloniex.on('error', (err) => {
 // script
 _outHR()
 _getSubs()
-poloniex.openWebSocket({version: 2})
+POLONIEX.openWebSocket({version: 2})
 
 // - messages from initializing WS will appear here
 setInterval(() => {
-    // save candles and refresh subscriptions every interval
+    // save candles and refresh subscriptions every CANDLE_SIZE
     _saveCandles()
     _getSubs()
-}, interval*1000)
+}, CANDLE_SIZE * 1000)
