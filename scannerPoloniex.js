@@ -7,7 +7,6 @@ const fs = require('fs')
 const Poloniex = require('poloniex-api-node')
 
 // vars
-const hr = "============================================="
 const interval = 15 // candle size in seconds
 const poloniex = new Poloniex()
 const tsStart = (new Date()).getTime() // starting time in ms
@@ -17,6 +16,11 @@ var trades = {} // object containing lists of trades used to compile the next ca
 var subs = [] // list of currency pairs that im currently subscribed too
 
 // functions
+_outHR = function () {
+    let hr = "###########################################################"
+    console.log(hr)
+}
+
 _currencyPairToPair = function (currencyPair) {
     currencyPairArr = currencyPair.split("_")
     if (currencyPairArr.length != 2) {
@@ -134,13 +138,13 @@ _saveCandles = function () {
         path += "data.csv"
         // append candle to path
         fs.appendFileSync(path, candle+"\n")
-        console.log(`${pair}: Candle successfully compiled and stored.`)
     }
 }
 
 // initialize websocket
 poloniex.on('open', (msg) => {
     console.log("Poloniex WebSocket open.")
+    console.log("Now collecting and storing candle data.")
 })
 
 poloniex.on('close', (reason) => {
@@ -180,14 +184,13 @@ poloniex.on('error', (err) => {
 })
 
 // script
-console.log(hr)
+_outHR()
 _getSubs()
 poloniex.openWebSocket({version: 2})
 
 // - messages from initializing WS will appear here
 setInterval(() => {
     // save candles and refresh subscriptions every interval
-    console.log(hr)
     _saveCandles()
     _getSubs()
 }, interval*1000)
