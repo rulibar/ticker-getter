@@ -118,18 +118,20 @@ _saveCandles = function () {
         for (j in ohlc) {candle += ohlc[j]+","}
         candle += volume
         // get path
-        pair = _currencyPairToPair(currencyPair)
-        path = ""
+        let pair = _currencyPairToPair(currencyPair)
+        let date = new Date(ts2)
+        let month = date.getMonth()
+        let year = date.getFullYear()
+        let path = ""
         // make sure path exists one level at a time
-        items = ["./Data/", "Poloniex/", pair+"/"]
+        let items = ["Data/", "Poloniex/", pair+"/", year+"/", month+"/"]
         for (i in items) {
             path += items[i]
             if (!fs.existsSync(path)) {fs.mkdirSync(path)}
         }
-        path += "data.csv/"
-        // sanity test on candle data
-        console.log(path)
-        console.log(candle)
+        path += "data.csv"
+        // append candle to path
+        fs.appendFileSync(path, candle+"\n")
     }
 }
 
