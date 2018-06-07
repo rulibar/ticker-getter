@@ -1,11 +1,6 @@
 Format for data entry:
 
-../Data/Exchange/PAIR
-Ex:
-../Data/Bitfinex/BTCUSD/
-    180501-180801.csv
-    180801-181101.csv
-    ...
+./Data/Poloniex/BTCUSD/2018/6/data.csv
 
 timestamp1,timestamp2,open,high,low,close,volume
 
