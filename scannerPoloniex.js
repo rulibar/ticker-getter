@@ -3,22 +3,39 @@ scannerPoloniex.js
 */
 
 // imports
-var fs = require('fs')
-var Poloniex = require('poloniex-api-node')
+var fs = require('fs'),
+    Poloniex = require('poloniex-api-node')
 
 // vars
-const CANDLE_SIZE = 15 // candle size in seconds
-const POLONIEX = new Poloniex()
-const TS_START = (new Date()).getTime() // starting time in ms
-var tsLast = {} // object storing last timestamp for each pair
-var priceLast = {} // object storing last price for each pair
-var trades = {} // object containing lists of trades used to compile the next candles
-var subs = [] // list of currency pairs that im currently subscribed too
+const SAVE_INTERVAL = 15, // candle size in seconds
+    LOG_INTERVAL = 60, //*60*24 // hr output period in seconds
+    POLONIEX = new Poloniex(),
+    TS_START = (new Date()).getTime() // starting time in ms
+var tsLast = {}, // object storing last timestamp for each pair
+    tsLastLog = 0, // integer storing the timestamp of the last log update
+    priceLast = {}, // object storing last price for each pair
+    trades = {}, // object containing lists of trades used to compile the next candles
+    subs = [] // list of currency pairs that im currently subscribed too
 
 // functions
-_outHR = function () {
-    let hr = "###########################################################"
+_outLog = function () {
+    let hr = "################",
+        ts = (new Date()).getTime()
+        timeRunning = ts - TS_START
+        daysRunning = timeRunning / (1000 * 60 * 60 * 24)
+        timeSinceLast = ts - tsLastLog
+    if (tsLastLog == 0) {
+        hr = `${hr} ticker getter 1 started up ${hr}`
+    } else {
+        hr += "##"
+        if (timeSinceLast/1000 > LOG_INTERVAL) {
+            hr = `${hr} days since start: ${daysRunning.toFixed(2)} ${hr}`
+        } else {
+            return
+        }
+    }
     console.log(hr)
+    tsLastLog = ts
 }
 
 _currencyPairToPair = function (currencyPair) {
@@ -184,13 +201,14 @@ POLONIEX.on('error', (err) => {
 })
 
 // script
-_outHR()
+_outLog()
 _getSubs()
 POLONIEX.openWebSocket({version: 2})
 
 // - messages from initializing WS will appear here
 setInterval(() => {
-    // save candles and refresh subscriptions every CANDLE_SIZE
+    // save candles and refresh subscriptions every SAVE_INTERVAL
+    _outLog()
     _saveCandles()
     _getSubs()
-}, CANDLE_SIZE * 1000)
+}, SAVE_INTERVAL * 1000)
