@@ -1,6 +1,6 @@
 {
   "name": "ticker-getter-1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cycles through pairs, monitors trade activity, compiles candle data, and saves to a text file. Currently only working on Poloniex.",
   "main": "scannerPoloniex.js",
   "scripts": {
