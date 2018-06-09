@@ -12,7 +12,6 @@ v1.0
     /- Add PACKAGE var to import package.json
     /- Add NAME and VERSION vars to import name and version from PACKAGE
     /- Use NAME and VERSION in _outLog on startup
-    /- remove dashes in name in package.json
     /- remove 3 #'s from hr in _outLog to make up for adding version
     /- add 3 #'s to hr if not starting up to make up for 3 removed
 
