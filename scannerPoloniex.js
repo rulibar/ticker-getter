@@ -5,9 +5,17 @@ cycles through the pairs in pairsPoloniex.json, compile candle data, and store t
 the Data file. See README.md
 
 v1.0
-- Initial stable version
+/- Initial stable version
     v1.0.1
-    - 
+    /- Change log output to 24 hours instead of 1 minute
+    /- When adding or removing subs send log once complete instead of at start
+    /- Add PACKAGE var to import package.json
+    /- Add NAME and VERSION vars to import name and version from PACKAGE
+    /- Use NAME and VERSION in _outLog on startup
+    /- remove dashes in name in package.json
+    /- remove 3 #'s from hr in _outLog to make up for adding version
+    /- add 3 #'s to hr if not starting up to make up for 3 removed
+
 */
 
 // imports
@@ -15,8 +23,11 @@ var fs = require('fs'),
     Poloniex = require('poloniex-api-node')
 
 // vars
-const SAVE_INTERVAL = 15, // candle size in seconds
-    LOG_INTERVAL = 60, //*60*24 // hr output period in seconds
+const PACKAGE = JSON.parse(fs.readFileSync('package.json'))
+    NAME = PACKAGE.name,
+    VERSION = PACKAGE.version,
+    SAVE_INTERVAL = 15, // candle size in seconds
+    LOG_INTERVAL = 60*60*24, // hr output period in seconds
     POLONIEX = new Poloniex(),
     TS_START = (new Date()).getTime() // starting time in ms
 var tsLast = {}, // object storing last timestamp for each pair
@@ -27,16 +38,16 @@ var tsLast = {}, // object storing last timestamp for each pair
 
 // functions
 _outLog = function () {
-    let hr = "################",
+    let hr = "#############",
         ts = (new Date()).getTime()
         timeRunning = ts - TS_START
         daysRunning = timeRunning / (1000 * 60 * 60 * 24)
         timeSinceLast = ts - tsLastLog
     // get hr
     if (tsLastLog == 0) {
-        hr = `${hr} ticker getter 1 started up ${hr}`
+        hr = `${hr} ${NAME} v${VERSION} started up ${hr}`
     } else {
-        hr += "##"
+        hr += "#####"
         if (timeSinceLast/1000 > LOG_INTERVAL) {
             hr = `${hr} days since start: ${daysRunning.toFixed(2)} ${hr}`
         } else return
@@ -82,12 +93,12 @@ _getSubs = function () {
         let currencyPair = subs[i],
             pair = _currencyPairToPair(currencyPair)
         if (newSubs.indexOf(currencyPair) < 0) {
-            console.log(`Removing subscription to ${pair}.`)
             POLONIEX.unsubscribe(currencyPair)
             delete trades[currencyPair]
             delete tsLast[currencyPair]
             delete priceLast[currencyPair]
             subs.splice(i, 1)
+            console.log(`Removed subscription to ${pair}.`)
         }
     }
     // -- add new subs
@@ -95,12 +106,12 @@ _getSubs = function () {
         let currencyPair = newSubs[i],
             pair = _currencyPairToPair(currencyPair)
         if (subs.indexOf(currencyPair) < 0) {
-            console.log(`Subscribed to ${pair}.`)
             trades[currencyPair] = []
             tsLast[currencyPair] = (new Date()).getTime()
             priceLast[currencyPair] = 0
             POLONIEX.subscribe(currencyPair)
             subs.push(currencyPair)
+            console.log(`Subscribed to ${pair}.`)
         }
     }
 }
