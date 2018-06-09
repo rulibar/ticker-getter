@@ -1,8 +1,8 @@
 {
   "name": "ticker-getter-1",
-  "version": "0.1.0",
-  "description": "The first attempt at a program to retrieve and store ticker data from many exchanges",
-  "main": "scanner.js",
+  "version": "1.0.0",
+  "description": "Cycles through pairs, monitors trade activity, compiles candle data, and saves to a text file. Currently only working on Poloniex.",
+  "main": "scannerPoloniex.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
