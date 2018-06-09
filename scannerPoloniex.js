@@ -3,6 +3,11 @@ scannerPoloniex.js
 Description: A candle data compiler and saver for Poloniex exchange. Periodically
 cycles through the pairs in pairsPoloniex.json, compile candle data, and store to
 the Data file. See README.md
+
+v1.0
+- Initial stable version
+    v1.0.0
+    - 
 */
 
 // imports
