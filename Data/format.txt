@@ -1,8 +1,9 @@
 Format for data entry:
 
-./Data/Poloniex/BTCUSD/2018/6/data.csv
+./Data/Poloniex/BTCUSD/2018/6-1.csv
+./Data/Poloniex/BTCUSD/2018/6-2.csv
 
 timestamp1,timestamp2,open,high,low,close,volume
 
-timestamp 1: The js ts when we started data collection
-timestamp 2: The js ts when we stopped collecting data for this candle
+timestamp 1: The js ts when we started data collection for this candle
+timestamp 2: The js ts when we stopped data collection for this candle
