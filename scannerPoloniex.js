@@ -27,6 +27,9 @@ v1.0
     /- Other minor code improvements
     /- When WS is opened, wait 3 seconds before saying that data is being
        collected in case WS spits an error immediately after opening.
+    v1.0.3
+    /- Add a comma after PACKAGE declaration
+    /- Add commas after var definitions in functions where necessary
 
 */
 
@@ -35,7 +38,7 @@ var fs = require('fs'),
     Poloniex = require('poloniex-api-node')
 
 // vars
-const PACKAGE = JSON.parse(fs.readFileSync('package.json'))
+const PACKAGE = JSON.parse(fs.readFileSync('package.json')),
     NAME = PACKAGE.name,
     VERSION = PACKAGE.version,
     SAVE_INTERVAL = 15, // candle size in seconds
@@ -51,9 +54,9 @@ var tsLast = {}, // object storing last timestamp for each pair
 // functions
 _outLog = function () {
     let hr = "#############",
-        ts = (new Date()).getTime()
-        timeRunning = ts - TS_START
-        daysRunning = timeRunning / (1000 * 60 * 60 * 24)
+        ts = (new Date()).getTime(),
+        timeRunning = ts - TS_START,
+        daysRunning = timeRunning / (1000 * 60 * 60 * 24),
         timeSinceLast = ts - tsLastLog
     // get hr
     if (tsLastLog == 0) {
@@ -177,12 +180,12 @@ _saveCandles = function () {
             month = date.getMonth() + 1,
             year = date.getFullYear(),
             path = "",
-            items = ["Data/", "Poloniex/", `${pair}/`, `${year}/`]
+            items = ["Data/", "Poloniex/", `${pair}/`, `${year}/`],
             filename = `${month}-${day}.csv`
         // make sure path exists one level at a time
         for (i in items) {
             path += items[i]
-            if (!fs.existsSync(path)) {fs.mkdirSync(path)}
+            if (!fs.existsSync(path)) fs.mkdirSync(path)
         }
         path += filename
         // append candle to path
