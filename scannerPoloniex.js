@@ -14,6 +14,19 @@ v1.0
     /- Use NAME and VERSION in _outLog on startup
     /- remove 3 #'s from hr in _outLog to make up for adding version
     /- add 3 #'s to hr if not starting up to make up for 3 removed
+    v1.0.2
+    /- Change format of saves so month and day are included in filename
+        /- Data/Poloniex/BTCUSD/2018/5-1.csv
+        /- Add day var in _saveCandles path section
+        /- Remove month from items in _saveCandles
+        /- Add filename var in _saveCandles constructed with day and month
+        /- Add filename to end of path instead of "data.csv"
+    /- Add +1 to the month so it goes from 1-12 instead of 0-11
+    /- Redo error section so non-string errors are stringified before being
+       sent
+    /- Other minor code improvements
+    /- When WS is opened, wait 3 seconds before saying that data is being
+       collected in case WS spits an error immediately after opening.
 
 */
 
@@ -148,32 +161,30 @@ _saveCandles = function () {
                 tradeList[tradeList.length - 1].price
             ]
             for (let j in tradeList) {
-                if (tradeList[j].price > ohlc[1]) {
-                    ohlc[1] = tradeList[j].price
-                }
-                if (tradeList[j].price < ohlc[2]) {
-                    ohlc[2] = tradeList[j].price
-                }
+                if (tradeList[j].price > ohlc[1]) ohlc[1] = tradeList[j].price
+                if (tradeList[j].price < ohlc[2]) ohlc[2] = tradeList[j].price
                 volume += tradeList[j].amount
             }
         }
         // get candle
         let candle = `${ts1},${ts2},`
-        for (j in ohlc) {candle += `${ohlc[j]},`}
+        for (j in ohlc) candle += `${ohlc[j]},`
         candle += volume
         // get path
         let pair = _currencyPairToPair(currencyPair),
             date = new Date(ts2),
-            month = date.getMonth(),
+            day = date.getDate(),
+            month = date.getMonth() + 1,
             year = date.getFullYear(),
             path = "",
-            items = ["Data/", "Poloniex/", `${pair}/`, `${year}/`, `${month}/`]
+            items = ["Data/", "Poloniex/", `${pair}/`, `${year}/`]
+            filename = `${month}-${day}.csv`
         // make sure path exists one level at a time
         for (i in items) {
             path += items[i]
             if (!fs.existsSync(path)) {fs.mkdirSync(path)}
         }
-        path += "data.csv"
+        path += filename
         // append candle to path
         fs.appendFileSync(path, candle + "\n")
     }
@@ -182,7 +193,10 @@ _saveCandles = function () {
 // initialize websocket
 POLONIEX.on('open', (msg) => {
     console.log("Poloniex WebSocket open.")
-    console.log("Now collecting and storing candle data.")
+    // - startup message
+    setTimeout(() => {
+        console.log("Now collecting and storing candle data.")
+    }, 3000)
 })
 
 POLONIEX.on('close', (reason) => {
@@ -208,21 +222,14 @@ POLONIEX.on('message', (channelName, data, seq) => {
 })
 
 POLONIEX.on('error', (err) => {
+    if (typeof(err) != "string") err = JSON.stringify(err)
     console.log(`Error: '${err}'`)
-    if (typeof(err) != "string") {
-        err = JSON.stringify(err)
-    } else {
-        if (err.indexOf("statusCode: 522") > -1) {
-            console.log("WS failed to open. Retrying...")
-            setTimeout(() => {
-                POLONIEX.openWebSocket({version: 2})
-            }, 1000)
-        } else if (err.indexOf("statusCode: 502") > -1) {
-            console.log("WS failed to open. Retrying...")
-            setTimeout(() => {
-                POLONIEX.openWebSocket({version: 2})
-            }, 1000)
-        }
+    if (err.indexOf("statusCode: 522") > -1) {
+        console.log("WS failed to open. Retrying...")
+        setTimeout(() => {POLONIEX.openWebSocket({version: 2})}, 1000)
+    } else if (err.indexOf("statusCode: 502") > -1) {
+        console.log("WS failed to open. Retrying...")
+        setTimeout(() => {POLONIEX.openWebSocket({version: 2})}, 1000)
     }
 })
 
@@ -230,8 +237,9 @@ POLONIEX.on('error', (err) => {
 _outLog()
 _getSubs()
 POLONIEX.openWebSocket({version: 2})
-
 // - messages from initializing WS will appear here
+
+// - start collecting
 setInterval(() => {
     // save candles and refresh subscriptions every SAVE_INTERVAL
     _outLog()
