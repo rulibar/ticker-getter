@@ -30,6 +30,10 @@ v1.0
     v1.0.3
     /- Add a comma after PACKAGE declaration
     /- Add commas after var definitions in functions where necessary
+    v1.0.4
+    /- When the WS is closed, stringify reason and send to log, then attempt
+       to reconnect to WS
+       /- In case the WS is unexpectedly closed during data collection
 
 */
 
@@ -204,6 +208,9 @@ POLONIEX.on('open', (msg) => {
 
 POLONIEX.on('close', (reason) => {
     console.log("Poloniex WebSocket closed.")
+    console.log(JSON.stringify(reason))
+    console.log("Trying to reopen the WebSocket...")
+    setTimeout(() => {POLONIEX.openWebSocket({version: 2})}, 1000)
 })
 
 POLONIEX.on('message', (channelName, data, seq) => {
