@@ -34,6 +34,15 @@ v1.0
     /- When the WS is closed, stringify reason and send to log, then attempt
        to reconnect to WS
        /- In case the WS is unexpectedly closed during data collection
+    v1.0.5
+    /- Only use currencyPair when absolutely necessary. Use pair instead because
+       we can always convert currencyPair to pair but not reverse
+    /- Store currencyPair to pair relations in _getSubs so I can still subscribe
+       and unsubscribe properly when adding or removing pairs
+    /- Use function _f = (){} instead of _f = function () to be consistent with
+       var declarations
+    /- Remove unnecessary let in _saveCandles
+    /- Add _openWebSocket function when initializing WS
 
 */
 
@@ -56,7 +65,7 @@ var tsLast = {}, // object storing last timestamp for each pair
     subs = [] // list of currency pairs that im currently subscribed too
 
 // functions
-_outLog = function () {
+function _outLog() {
     let hr = "#############",
         ts = (new Date()).getTime(),
         timeRunning = ts - TS_START,
@@ -76,7 +85,7 @@ _outLog = function () {
     tsLastLog = ts
 }
 
-_currencyPairToPair = function (currencyPair) {
+function _currencyPairToPair(currencyPair) {
     let currencyPairArr = currencyPair.split("_"),
         pair = ""
     // make sure pair arr has 2 elements
@@ -91,74 +100,76 @@ _currencyPairToPair = function (currencyPair) {
     return pair
 }
 
-_getSubs = function () {
+function _getSubs() {
     // update subscriptions from json file
     // - get pairs from json then newSubs from pairs
     let pairs = JSON.parse(fs.readFileSync('pairsPoloniex.json')),
-        newSubs = []
+        newSubs = [],
+        pairToCurrencyPair = {}
     for (base in pairs) {
         for (i in pairs[base]) {
             let asset = pairs[base][i],
-                pair = asset+base,
-                currencyPair = base+"_"+asset
-            if (newSubs.indexOf(currencyPair) < 0) {
-                newSubs.push(currencyPair)
+                currencyPair = base+"_"+asset,
+                pair = asset+base
+            pairToCurrencyPair[pair] = currencyPair
+            if (newSubs.indexOf(pair) < 0) {
+                newSubs.push(pair)
             }
         }
     }
     // - compare newSubs to subs
     // -- unsub outdated subs
     for (i in subs) {
-        let currencyPair = subs[i],
-            pair = _currencyPairToPair(currencyPair)
-        if (newSubs.indexOf(currencyPair) < 0) {
+        let pair = subs[i],
+            currencyPair = pairToCurrencyPair[pair]
+        if (newSubs.indexOf(pair) < 0) {
             POLONIEX.unsubscribe(currencyPair)
-            delete trades[currencyPair]
-            delete tsLast[currencyPair]
-            delete priceLast[currencyPair]
+            delete trades[pair]
+            delete tsLast[pair]
+            delete priceLast[pair]
             subs.splice(i, 1)
             console.log(`Removed subscription to ${pair}.`)
         }
     }
     // -- add new subs
     for (i in newSubs) {
-        let currencyPair = newSubs[i],
-            pair = _currencyPairToPair(currencyPair)
-        if (subs.indexOf(currencyPair) < 0) {
-            trades[currencyPair] = []
-            tsLast[currencyPair] = (new Date()).getTime()
-            priceLast[currencyPair] = 0
+        let pair = newSubs[i],
+            currencyPair = pairToCurrencyPair[pair]
+        if (subs.indexOf(pair) < 0) {
+            trades[pair] = []
+            tsLast[pair] = (new Date()).getTime()
+            priceLast[pair] = 0
             POLONIEX.subscribe(currencyPair)
-            subs.push(currencyPair)
+            subs.push(pair)
             console.log(`Subscribed to ${pair}.`)
         }
     }
 }
 
-_saveCandles = function () {
+function _saveCandles() {
     // convert trade data to candles and save to storage
     // - backup trades, reset trades
     let tradeData = {}
-    for (currencyPair in trades) {
-        tradeData[currencyPair] = trades[currencyPair]
-        trades[currencyPair] = []
+    for (pair in trades) {
+        tradeData[pair] = trades[pair]
+        trades[pair] = []
     }
     // - cycle through subs
     for (i in subs) {
-        let currencyPair = subs[i],
+        let pair = subs[i],
             // get timestamps
-            ts1 = tsLast[currencyPair],
+            ts1 = tsLast[pair],
             ts2 = (new Date()).getTime(),
             // get trades for this pair only
-            tradeList = tradeData[currencyPair],
+            tradeList = tradeData[pair],
             // initialize ohlc and volume
             ohlc = [0, 0, 0, 0],
             volume = 0
-        tsLast[currencyPair] = ts2
+        tsLast[pair] = ts2
         // get ohlc and volume
         if (tradeList.length == 0) {
-            if (priceLast[currencyPair] == 0) continue
-            let price = priceLast[currencyPair]
+            if (priceLast[pair] == 0) continue
+            let price = priceLast[pair]
             ohlc = [price, price, price, price]
         } else {
             ohlc = [
@@ -167,7 +178,7 @@ _saveCandles = function () {
                 tradeList[0].price,
                 tradeList[tradeList.length - 1].price
             ]
-            for (let j in tradeList) {
+            for (j in tradeList) {
                 if (tradeList[j].price > ohlc[1]) ohlc[1] = tradeList[j].price
                 if (tradeList[j].price < ohlc[2]) ohlc[2] = tradeList[j].price
                 volume += tradeList[j].amount
@@ -178,8 +189,7 @@ _saveCandles = function () {
         for (j in ohlc) candle += `${ohlc[j]},`
         candle += volume
         // get path
-        let pair = _currencyPairToPair(currencyPair),
-            date = new Date(ts2),
+        let date = new Date(ts2),
             day = date.getDate(),
             month = date.getMonth() + 1,
             year = date.getFullYear(),
@@ -218,14 +228,15 @@ POLONIEX.on('message', (channelName, data, seq) => {
         for (i in data) {
             if (data[i].type == "newTrade") {
                 let currencyPair = channelName,
+                    pair = _currencyPairToPair(currencyPair)
                     trade = data[i].data,
                     amount = parseFloat(trade.amount),
                     price = parseFloat(trade.rate)
-                trades[currencyPair].push({
+                trades[pair].push({
                     amount: amount,
                     price: price
                 })
-                priceLast[currencyPair] = price
+                priceLast[pair] = price
             }
         }
     } catch (err) {console.log(err)}
@@ -243,10 +254,14 @@ POLONIEX.on('error', (err) => {
     }
 })
 
+function _openWebSocket() {
+    POLONIEX.openWebSocket({version: 2})
+}
+
 // script
 _outLog()
 _getSubs()
-POLONIEX.openWebSocket({version: 2})
+_openWebSocket()
 // - messages from initializing WS will appear here
 
 // - start collecting
