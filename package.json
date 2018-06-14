@@ -1,23 +1,24 @@
 {
-  "name": "ticker-getter-1",
-  "version": "1.0.4",
-  "description": "Cycles through pairs, monitors trade activity, compiles candle data, and saves to a text file. Currently only working on Poloniex.",
-  "main": "scannerPoloniex.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rulibar/ticker-getter-1.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/rulibar/ticker-getter-1/issues"
-  },
-  "homepage": "https://github.com/rulibar/ticker-getter-1#readme",
-  "dependencies": {
-    "poloniex-api-node": "^1.8.1"
-  }
+    "name": "ticker-getter-1",
+    "version": "1.0.5",
+    "description": "Cycles through pairs, monitors trade activity, compiles candle data, and saves to a text file.",
+    "main": "scannerPoloniex.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rulibar/ticker-getter-1.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/rulibar/ticker-getter-1/issues"
+    },
+    "homepage": "https://github.com/rulibar/ticker-getter-1#readme",
+    "dependencies": {
+        "node-binance-api": "^0.7.1",
+        "poloniex-api-node": "^1.8.1"
+    }
 }
