@@ -14,6 +14,8 @@ v1.0
     /- install node-binance-api into package
     /- replicate scannerPoloniex code for Binance and use as the initial
        functional release of scannerBinance
+    v1.0.6
+    /- make _getSubs more similar to Poloniex by tracking currencyPairs
 
 */
 
@@ -59,11 +61,14 @@ function _getSubs() {
     // update subscriptions from json file
     // - get pairs from json then newSubs from pairs
     let pairs = JSON.parse(fs.readFileSync('pairsBinance.json')),
-        newSubs = []
+        newSubs = [],
+        pairToCurrencyPair = {}
     for (base in pairs) {
         for (i in pairs[base]) {
             let asset = pairs[base][i],
+                currencyPair = base+"_"+asset,
                 pair = asset+base
+            pairToCurrencyPair[pair] = currencyPair
             if (newSubs.indexOf(pair) < 0) {
                 newSubs.push(pair)
             }
@@ -72,7 +77,8 @@ function _getSubs() {
     // - compare newSubs to subs
     // -- unsub outdated subs
     for (i in subs) {
-        let pair = subs[i]
+        let pair = subs[i],
+            currencyPair = pairToCurrencyPair[pair]
         if (newSubs.indexOf(pair) < 0) {
             delete trades[pair]
             delete tsLast[pair]
@@ -83,7 +89,8 @@ function _getSubs() {
     }
     // -- add new subs
     for (i in newSubs) {
-        let pair = newSubs[i]
+        let pair = newSubs[i],
+            currencyPair = pairToCurrencyPair[pair]
         if (subs.indexOf(pair) < 0) {
             trades[pair] = []
             tsLast[pair] = (new Date()).getTime()
