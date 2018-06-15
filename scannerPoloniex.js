@@ -43,6 +43,14 @@ v1.0
        var declarations
     /- Remove unnecessary let in _saveCandles
     /- Add _openWebSocket function when initializing WS
+    v1.0.6
+    /- Stop trying to stringify the error in case the error is circular
+    /- Make sure to not add the error to a string when logging to avoid
+       [Object object] response
+    /- Move up the _openWebSocket function and call it whenever I need to open
+       WS
+    /- Handle WS 'error' after defining _openWebSocket. error -> open -> close
+       -> message
 
 */
 
@@ -208,6 +216,22 @@ function _saveCandles() {
 }
 
 // initialize websocket
+function _openWebSocket() {
+    POLONIEX.openWebSocket({version: 2})
+}
+
+POLONIEX.on('error', (err) => {
+    console.log("Error:")
+    console.log(err)
+    if (err.indexOf("statusCode: 522") > -1) {
+        console.log("WS failed to open. Retrying...")
+        setTimeout(() => _openWebSocket(), 1000)
+    } else if (err.indexOf("statusCode: 502") > -1) {
+        console.log("WS failed to open. Retrying...")
+        setTimeout(() => _openWebSocket(), 1000)
+    }
+})
+
 POLONIEX.on('open', (msg) => {
     console.log("Poloniex WebSocket open.")
     // - startup message
@@ -220,7 +244,7 @@ POLONIEX.on('close', (reason) => {
     console.log("Poloniex WebSocket closed.")
     console.log(JSON.stringify(reason))
     console.log("Trying to reopen the WebSocket...")
-    setTimeout(() => {POLONIEX.openWebSocket({version: 2})}, 1000)
+    setTimeout(() => _openWebSocket(), 1000)
 })
 
 POLONIEX.on('message', (channelName, data, seq) => {
@@ -241,22 +265,6 @@ POLONIEX.on('message', (channelName, data, seq) => {
         }
     } catch (err) {console.log(err)}
 })
-
-POLONIEX.on('error', (err) => {
-    if (typeof(err) != "string") err = JSON.stringify(err)
-    console.log(`Error: '${err}'`)
-    if (err.indexOf("statusCode: 522") > -1) {
-        console.log("WS failed to open. Retrying...")
-        setTimeout(() => {POLONIEX.openWebSocket({version: 2})}, 1000)
-    } else if (err.indexOf("statusCode: 502") > -1) {
-        console.log("WS failed to open. Retrying...")
-        setTimeout(() => {POLONIEX.openWebSocket({version: 2})}, 1000)
-    }
-})
-
-function _openWebSocket() {
-    POLONIEX.openWebSocket({version: 2})
-}
 
 // script
 _outLog()
