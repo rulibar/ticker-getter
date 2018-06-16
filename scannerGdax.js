@@ -12,6 +12,13 @@ v1.0
     /- add pairToPairId and pairIdToPair to track relationships between pairs
        and IDs used by the exchange. Set this up when opening WS
     /- complete the functionality by using the other scanners as reference
+    v1.0.8
+    /- add EXCHANGE
+    /- copy _startupMessage from scannerBinance and use when WS open
+    /- copy _saveCandles from scannerBinance and send EXCHANGE to it
+    /- add PAIRSFILE to track name of pairs file
+    /- use PAIRSFILE as argument in _getSubs()
+    /- add _onTrade to handle the WS trade data we care about
 
 */
 
@@ -24,7 +31,9 @@ const PACKAGE = JSON.parse(fs.readFileSync('package.json')),
     VERSION = PACKAGE.version,
     SAVE_INTERVAL = 15, // candle size in seconds
     LOG_INTERVAL = 60*60*24, // hr output period in seconds
-    TS_START = (new Date()).getTime() // starting time in ms
+    TS_START = (new Date()).getTime(), // starting time in ms
+    PAIRSFILE = "pairsGdax.json", // name of file where pairs are stored
+    EXCHANGE = "Gdax" // exchange name
 var GDAX = new Gdax.PublicClient(),
     tsLast = {}, // object storing last timestamp for each pair
     tsLastLog = 0, // integer storing the timestamp of the last log update
@@ -56,10 +65,17 @@ function _outLog() {
     tsLastLog = ts
 }
 
-function _getSubs() {
+function _startupMessage(exchange) {
+    console.log(`${exchange} WebSocket open.`)
+    setTimeout(() => {
+        console.log("Now collecting and storing candle data.")
+    }, 3000)
+}
+
+function _getSubs(filename) {
     // update subscriptions from json file
     // - get pairs from json then newSubs from pairs
-    let pairs = JSON.parse(fs.readFileSync('pairsGdax.json')),
+    let pairs = JSON.parse(fs.readFileSync(filename)),
         newSubs = [],
         pairToCurrencyPair = {}
     for (base in pairs) {
@@ -100,7 +116,7 @@ function _getSubs() {
     }
 }
 
-function _saveCandles() {
+function _saveCandles(exchange) {
     // convert trade data to candles and save to storage
     // - backup trades, reset trades
     let tradeData = {}
@@ -148,7 +164,7 @@ function _saveCandles() {
             month = date.getMonth() + 1,
             year = date.getFullYear(),
             path = "",
-            items = ["Data/", "Gdax/", `${pair}/`, `${year}/`],
+            items = [`Data/`, `${exchange}/`, `${pair}/`, `${year}/`],
             filename = `${month}-${day}.csv`
         // make sure path exists one level at a time
         for (i in items) {
@@ -162,6 +178,14 @@ function _saveCandles() {
 }
 
 // initialize websocket
+function _onTrade(pair, amount, price) {
+    trades[pair].push({
+        amount: amount,
+        price: price
+    })
+    priceLast[pair] = price
+}
+
 function _setWSMethods(WS) {
     WS.on('error', (err) => {
         console.log("Error:")
@@ -169,11 +193,7 @@ function _setWSMethods(WS) {
     })
 
     WS.on('open', () => {
-        console.log("Gdax WebSocket open.")
-        // - startup message
-        setTimeout(() => {
-            console.log("Now collecting and storing candle data.")
-        }, 3000)
+        _startupMessage(EXCHANGE)
     })
 
     WS.on('close', (res) => {
@@ -191,22 +211,17 @@ function _setWSMethods(WS) {
             if (subs.indexOf(pair) > -1) {
                 let amount = parseFloat(msg.size),
                     price = parseFloat(msg.price)
-                trades[pair].push({
-                    amount: amount,
-                    price: price
-                })
-                priceLast[pair] = price
+                _onTrade(pair, amount, price)
             }
         }
     })
 }
 
 function _openWebSocket() {
-    // get a list of pairs
     GDAX = new Gdax.PublicClient()
+    // get a list of pairs
     GDAX.getProducts((err, response, data) => {
         if (err) throw err
-        // get pairs
         for (i in data) {
             let pairId = data[i].id,
                 base = data[i].quote_currency,
@@ -223,7 +238,7 @@ function _openWebSocket() {
 
 // script
 _outLog()
-_getSubs()
+_getSubs(PAIRSFILE)
 _openWebSocket()
 // - messages from initializing WS will appear here
 
@@ -231,6 +246,6 @@ _openWebSocket()
 setInterval(() => {
     // save candles and refresh subscriptions every SAVE_INTERVAL
     _outLog()
-    _saveCandles()
-    _getSubs()
+    _saveCandles(EXCHANGE)
+    _getSubs(PAIRSFILE)
 }, SAVE_INTERVAL * 1000)
