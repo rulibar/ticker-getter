@@ -20,6 +20,10 @@ v1.0
        the WS is open
     /- when WS is opened, subscribe to all pairs in subs to make up for not
        doing so in _getSubs
+    v1.0.7
+    /- when logging an error do the same format as poloniex
+    /- when the websocket is closed, do a timeout to reopen after 1 second
+    /- when WS is closed, use same response format as Gdax and Poloniex
 
 */
 
@@ -173,7 +177,10 @@ function _openWebSocket() {
     BITFINEX.open()
 }
 
-BITFINEX.on('error', (err) => console.log(err))
+BITFINEX.on('error', (err) => {
+    console.log("Error:")
+    console.log(err)
+})
 
 BITFINEX.on('open', () => {
     console.log("Bitfinex WebSocket open.")
@@ -187,8 +194,12 @@ BITFINEX.on('open', () => {
     }, 3000)
 })
 
-BITFINEX.on('close', () => {
+BITFINEX.on('close', (res) => {
     console.log("Bitfinex WebSocket closed.")
+    if (res == undefined) res = "No response from server."
+    console.log(res)
+    console.log("Trying to reopen the WebSocket...")
+    setTimeout(() => _openWebSocket(), 1000)
 })
 
 BITFINEX.onTradeEntry({}, (data, info) => {
