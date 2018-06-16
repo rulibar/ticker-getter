@@ -16,6 +16,8 @@ v1.0
        functional release of scannerBinance
     v1.0.6
     /- make _getSubs more similar to Poloniex by tracking currencyPairs
+    v1.0.7
+    /- stop parsing float in ticker in _openWebSocket and simplify code
 
 */
 
@@ -186,10 +188,7 @@ function _openWebSocket() {
     BINANCE.prices((err, ticker) => {
         if (err) throw err
         let allPairs = []
-        for (pair in ticker) {
-            ticker[pair] = parseFloat(ticker[pair])
-            allPairs.push(pair)
-        }
+        for (pair in ticker) allPairs.push(pair)
         // - start storing trade data on pairs
         BINANCE.websockets.trades(allPairs, (trade) => {
             _onMessage(trade)
