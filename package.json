@@ -1,6 +1,6 @@
 {
     "name": "ticker-getter-1",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "Cycles through pairs, monitors trade activity, compiles candle data, and saves to a text file.",
     "main": "scannerPoloniex.js",
     "scripts": {
@@ -19,6 +19,7 @@
     "homepage": "https://github.com/rulibar/ticker-getter-1#readme",
     "dependencies": {
         "bitfinex-api-node": "^2.0.0-beta.1",
+        "gdax": "^0.8.0",
         "node-binance-api": "^0.7.1",
         "poloniex-api-node": "^1.8.1"
     }
