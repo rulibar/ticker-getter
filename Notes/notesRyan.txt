@@ -96,3 +96,52 @@ I'm going to add Coinbase (GDAX) next. Hopefully the API won't change much when
 they change their name to Coinbase Pro. Then once I have 4 exchanges I think I
 will call it good for now. I will just keep improving the 4 instead of adding
 new exchanges.
+
+## 2018-06-16
+
+Ran a 1d test with all 4 running at once. All are still running. Gdax restarted
+a couple times with no response from server.
+
+A few notes about updating:
+- scanners should not be touched by user. only the pairs should be updated in
+  real-time
+- when i update the scanner I will have to stop the old scanner and start the
+  new one manually. and I will have to stop the old one before starting the new
+  one to make sure candles don't overlap and double-count volume
+- when I update one scanner I will also need to update package.json and thus
+  all the other scanners. I will just plan on updating all scanners at once.
+- so I will import the new version into its own file, set it up, stop the old
+  scanners, copy the data file, then start the new scanners
+- for this reason I will want to include version in dirname so that there's not
+  a dirname conflict when updating. Ex: ticker-getter-1_1-0-7/
+- if something goes wrong and I need to kill one of the scanners I want to be
+  able to do it without stopping the others. So I should call each scanner
+  separately
+- if the user makes a mistake in the pairs file I don't want it to break all the
+  scanners, so I should store the pairs separately
+- so all of the files should continue to stay separated like they are. I can
+  possibly create some sort of script to handle all of them later
+
+In summary:
+- All scanner and pairs files should stay separated like they are and each
+  scanner should be run as its own process
+- Include version in dirname on aws for updating
+- To update, clone new version to aws, add version to dirname, install npm, set up
+  pairs, kill old scanners one at a time, copy over data, run new scanners one at
+  a time (with 'nohup node scannerPoloniex &> nohupPoloniex.out &')
+
+So I could in theory add a module to store commonly used functions and stuff,
+but I need to keep the actual scanners separate.
+
+## 2018-06-16
+
+Next I want to talk about how I'm getting data from the websockets. On Binance
+and Gdax I cycle through the ticker to get a list of all possible pairs, then
+I subscribe to trade data for all pairs, then send the trade data to a function
+which stores it to trades.
+
+On Bitfinex and Poloniex I only recieve data from the pairs I'm subscribed too.
+And when a new pair is added or removed I subscribe or unsubscribe from it. In
+theory I could instead do what I'm doing with Gdax and Binance. This would also
+probably be preferable for reasons of consistency and also because I don't really
+know how the subscribe and unsubscribe methods work for each exchange.
