@@ -51,6 +51,13 @@ v1.0
        WS
     /- Handle WS 'error' after defining _openWebSocket. error -> open -> close
        -> message
+    v1.0.7
+    /- stop stringifying reason in poloniex close log for same reasons as in
+       error section
+    /- add "No response from server" check in WS close handling to be similar
+       to Gdax
+    /- remove msg var from WS open section since not being used and to keep
+       consistent with Gdax
 
 */
 
@@ -232,7 +239,7 @@ POLONIEX.on('error', (err) => {
     }
 })
 
-POLONIEX.on('open', (msg) => {
+POLONIEX.on('open', () => {
     console.log("Poloniex WebSocket open.")
     // - startup message
     setTimeout(() => {
@@ -240,9 +247,10 @@ POLONIEX.on('open', (msg) => {
     }, 3000)
 })
 
-POLONIEX.on('close', (reason) => {
+POLONIEX.on('close', (res) => {
     console.log("Poloniex WebSocket closed.")
-    console.log(JSON.stringify(reason))
+    if (res == undefined) res = "No response from server."
+    console.log(res)
     console.log("Trying to reopen the WebSocket...")
     setTimeout(() => _openWebSocket(), 1000)
 })
