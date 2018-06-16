@@ -58,6 +58,15 @@ v1.0
        to Gdax
     /- remove msg var from WS open section since not being used and to keep
        consistent with Gdax
+    v1.0.8
+    /- add PAIRSFILE and EXCHANGE
+    /- change POLONIEX to a var
+    /- replace _getSubs, _saveCandles, and script section with Bitfinex version
+    /- add _onTrade from scannerBitfinex
+    /- add _startupMessage from scannerBitfinex
+    /- redo WS functionality similar to others (based on Bitfinex)
+    /- remove _currencyPairToPair
+    /- add pairIdToPair and pairToPairId like in Gdax
 
 */
 
@@ -71,13 +80,17 @@ const PACKAGE = JSON.parse(fs.readFileSync('package.json')),
     VERSION = PACKAGE.version,
     SAVE_INTERVAL = 15, // candle size in seconds
     LOG_INTERVAL = 60*60*24, // hr output period in seconds
-    POLONIEX = new Poloniex(),
-    TS_START = (new Date()).getTime() // starting time in ms
-var tsLast = {}, // object storing last timestamp for each pair
+    TS_START = (new Date()).getTime(), // starting time in ms
+    PAIRSFILE = "pairsPoloniex.json", // name of file where pairs are stored
+    EXCHANGE = "Poloniex" // exchange name
+var POLONIEX = new Poloniex(),
+    tsLast = {}, // object storing last timestamp for each pair
     tsLastLog = 0, // integer storing the timestamp of the last log update
     priceLast = {}, // object storing last price for each pair
     trades = {}, // object containing lists of trades used to compile the next candles
     subs = [] // list of currency pairs that im currently subscribed too
+    pairToPairId = {} // converts pair to 'pair id' used by exchange
+    pairIdToPair = {} // converts pair id to pair
 
 // functions
 function _outLog() {
@@ -100,25 +113,17 @@ function _outLog() {
     tsLastLog = ts
 }
 
-function _currencyPairToPair(currencyPair) {
-    let currencyPairArr = currencyPair.split("_"),
-        pair = ""
-    // make sure pair arr has 2 elements
-    if (currencyPairArr.length != 2) {
-        let err = "Error in _currencyPairToPair: "
-        err += `currencyPair not recognized '${currencyPair}'`
-        console.log(err)
-        return pair
-    }
-    // return pair
-    pair += currencyPairArr[1] + currencyPairArr[0]
-    return pair
+function _startupMessage(exchange) {
+    console.log(`${exchange} WebSocket open.`)
+    setTimeout(() => {
+        console.log("Now collecting and storing candle data.")
+    }, 3000)
 }
 
-function _getSubs() {
+function _getSubs(filename) {
     // update subscriptions from json file
     // - get pairs from json then newSubs from pairs
-    let pairs = JSON.parse(fs.readFileSync('pairsPoloniex.json')),
+    let pairs = JSON.parse(fs.readFileSync(filename)),
         newSubs = [],
         pairToCurrencyPair = {}
     for (base in pairs) {
@@ -138,7 +143,6 @@ function _getSubs() {
         let pair = subs[i],
             currencyPair = pairToCurrencyPair[pair]
         if (newSubs.indexOf(pair) < 0) {
-            POLONIEX.unsubscribe(currencyPair)
             delete trades[pair]
             delete tsLast[pair]
             delete priceLast[pair]
@@ -154,14 +158,13 @@ function _getSubs() {
             trades[pair] = []
             tsLast[pair] = (new Date()).getTime()
             priceLast[pair] = 0
-            POLONIEX.subscribe(currencyPair)
             subs.push(pair)
             console.log(`Subscribed to ${pair}.`)
         }
     }
 }
 
-function _saveCandles() {
+function _saveCandles(exchange) {
     // convert trade data to candles and save to storage
     // - backup trades, reset trades
     let tradeData = {}
@@ -209,7 +212,7 @@ function _saveCandles() {
             month = date.getMonth() + 1,
             year = date.getFullYear(),
             path = "",
-            items = ["Data/", "Poloniex/", `${pair}/`, `${year}/`],
+            items = [`Data/`, `${exchange}/`, `${pair}/`, `${year}/`],
             filename = `${month}-${day}.csv`
         // make sure path exists one level at a time
         for (i in items) {
@@ -223,60 +226,79 @@ function _saveCandles() {
 }
 
 // initialize websocket
-function _openWebSocket() {
-    POLONIEX.openWebSocket({version: 2})
+function _onTrade(pair, amount, price) {
+    trades[pair].push({
+        amount: amount,
+        price: price
+    })
+    priceLast[pair] = price
 }
 
-POLONIEX.on('error', (err) => {
-    console.log("Error:")
-    console.log(err)
-    if (err.indexOf("statusCode: 522") > -1) {
-        console.log("WS failed to open. Retrying...")
+function _setWSMethods(WS) {
+    WS.on('error', (err) => {
+        console.log("Error:")
+        console.log(err)
+        if (err.indexOf("statusCode: 522") > -1) {
+            console.log("WS failed to open. Retrying...")
+            setTimeout(() => _openWebSocket(), 1000)
+        } else if (err.indexOf("statusCode: 502") > -1) {
+            console.log("WS failed to open. Retrying...")
+            setTimeout(() => _openWebSocket(), 1000)
+        }
+    })
+
+    WS.on('open', () => {
+        _startupMessage(EXCHANGE)
+    })
+
+    WS.on('close', (res) => {
+        console.log("Gdax WebSocket closed.")
+        if (res == undefined) res = "No response from server."
+        console.log(res)
+        console.log("Trying to reopen the WebSocket...")
         setTimeout(() => _openWebSocket(), 1000)
-    } else if (err.indexOf("statusCode: 502") > -1) {
-        console.log("WS failed to open. Retrying...")
-        setTimeout(() => _openWebSocket(), 1000)
-    }
-})
+    })
 
-POLONIEX.on('open', () => {
-    console.log("Poloniex WebSocket open.")
-    // - startup message
-    setTimeout(() => {
-        console.log("Now collecting and storing candle data.")
-    }, 3000)
-})
-
-POLONIEX.on('close', (res) => {
-    console.log("Poloniex WebSocket closed.")
-    if (res == undefined) res = "No response from server."
-    console.log(res)
-    console.log("Trying to reopen the WebSocket...")
-    setTimeout(() => _openWebSocket(), 1000)
-})
-
-POLONIEX.on('message', (channelName, data, seq) => {
-    try {
+    WS.on('message', (channelName, data, seq) => {
         for (i in data) {
             if (data[i].type == "newTrade") {
-                let currencyPair = channelName,
-                    pair = _currencyPairToPair(currencyPair)
-                    trade = data[i].data,
-                    amount = parseFloat(trade.amount),
-                    price = parseFloat(trade.rate)
-                trades[pair].push({
-                    amount: amount,
-                    price: price
-                })
-                priceLast[pair] = price
+                let pairId = channelName,
+                    pair = pairIdToPair[pairId]
+                if (subs.indexOf(pair) > -1) {
+                    let trade = data[i].data,
+                        amount = parseFloat(trade.amount),
+                        price = parseFloat(trade.rate)
+                    _onTrade(pair, amount, price)
+                }
             }
         }
-    } catch (err) {console.log(err)}
-})
+    })
+}
+
+function _openWebSocket() {
+    POLONIEX = new Poloniex()
+    // get a list of pairs
+    POLONIEX.returnTicker((err, ticker) => {
+        if (err) throw err
+        let pairIds = Object.keys(ticker)
+        for (i in pairIds) {
+            let pairId = pairIds[i],
+                pairIdArr = pairId.split('_'),
+                base = pairIdArr[0],
+                asset = pairIdArr[1],
+                pair = asset+base
+            pairToPairId[pair] = pairId
+            pairIdToPair[pairId] = pair
+            POLONIEX.subscribe(pairId)
+        }
+        _setWSMethods(POLONIEX)
+        POLONIEX.openWebSocket({version: 2})
+    })
+}
 
 // script
 _outLog()
-_getSubs()
+_getSubs(PAIRSFILE)
 _openWebSocket()
 // - messages from initializing WS will appear here
 
@@ -284,6 +306,6 @@ _openWebSocket()
 setInterval(() => {
     // save candles and refresh subscriptions every SAVE_INTERVAL
     _outLog()
-    _saveCandles()
-    _getSubs()
+    _saveCandles(EXCHANGE)
+    _getSubs(PAIRSFILE)
 }, SAVE_INTERVAL * 1000)
