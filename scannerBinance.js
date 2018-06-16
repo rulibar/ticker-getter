@@ -18,6 +18,18 @@ v1.0
     /- make _getSubs more similar to Poloniex by tracking currencyPairs
     v1.0.7
     /- stop parsing float in ticker in _openWebSocket and simplify code
+    v1.0.8
+    /- remove allPairs from _openWebSocket and use Object.keys instead
+    /- change some comments
+    /- add _startupMessage function
+    /- add EXCHANGE to store the exchange name
+    /- use EXCHANGE as an argument when calling _startupMessage and
+       _saveCandles
+    /- add PAIRSFILE to track name of pairs file
+    /- use PAIRSFILE as argument in _getSubs()
+    /- copy _onTrade from scannerGdax
+    /- remove _onMessage and use _onTrade instead
+    /- refer to BINANCE as a var instead of constant
 
 */
 
@@ -30,9 +42,11 @@ const PACKAGE = JSON.parse(fs.readFileSync('package.json')),
     VERSION = PACKAGE.version,
     SAVE_INTERVAL = 15, // candle size in seconds
     LOG_INTERVAL = 60*60*24, // hr output period in seconds
-    BINANCE = new Binance(),
-    TS_START = (new Date()).getTime() // starting time in ms
-var tsLast = {}, // object storing last timestamp for each pair
+    TS_START = (new Date()).getTime(), // starting time in ms
+    PAIRSFILE = "pairsBinance.json", // name of file where pairs are stored
+    EXCHANGE = "Binance" // exchange name
+var BINANCE = new Binance(),
+    tsLast = {}, // object storing last timestamp for each pair
     tsLastLog = 0, // integer storing the timestamp of the last log update
     priceLast = {}, // object storing last price for each pair
     trades = {}, // object containing lists of trades used to compile the next candles
@@ -59,10 +73,17 @@ function _outLog() {
     tsLastLog = ts
 }
 
-function _getSubs() {
+function _startupMessage(exchange) {
+    console.log(`${exchange} WebSocket open.`)
+    setTimeout(() => {
+        console.log("Now collecting and storing candle data.")
+    }, 3000)
+}
+
+function _getSubs(filename) {
     // update subscriptions from json file
     // - get pairs from json then newSubs from pairs
-    let pairs = JSON.parse(fs.readFileSync('pairsBinance.json')),
+    let pairs = JSON.parse(fs.readFileSync(filename)),
         newSubs = [],
         pairToCurrencyPair = {}
     for (base in pairs) {
@@ -103,7 +124,7 @@ function _getSubs() {
     }
 }
 
-function _saveCandles() {
+function _saveCandles(exchange) {
     // convert trade data to candles and save to storage
     // - backup trades, reset trades
     let tradeData = {}
@@ -151,7 +172,7 @@ function _saveCandles() {
             month = date.getMonth() + 1,
             year = date.getFullYear(),
             path = "",
-            items = ["Data/", "Binance/", `${pair}/`, `${year}/`],
+            items = [`Data/`, `${exchange}/`, `${pair}/`, `${year}/`],
             filename = `${month}-${day}.csv`
         // make sure path exists one level at a time
         for (i in items) {
@@ -165,45 +186,36 @@ function _saveCandles() {
 }
 
 // initialize websocket
-function _onMessage(msg) {
-    try {
-        msg = JSON.parse(JSON.stringify(msg))
-        if (msg.e == "trade") {
-            let pair = msg.s,
-                amount = parseFloat(msg.q),
-                price = parseFloat(msg.p)
-            if (subs.indexOf(pair) > -1) {
-                trades[pair].push({
-                    amount: amount,
-                    price: price
-                })
-                priceLast[pair] = price
-            }
-        }
-    } catch (err) {console.log(err)}
+function _onTrade(pair, amount, price) {
+    trades[pair].push({
+        amount: amount,
+        price: price
+    })
+    priceLast[pair] = price
 }
 
 function _openWebSocket() {
     // get a list of pairs
     BINANCE.prices((err, ticker) => {
         if (err) throw err
-        let allPairs = []
-        for (pair in ticker) allPairs.push(pair)
-        // - start storing trade data on pairs
-        BINANCE.websockets.trades(allPairs, (trade) => {
-            _onMessage(trade)
+        // set up WS
+        BINANCE.websockets.trades(Object.keys(ticker), (trade) => {
+            if (trade.e == "trade") {
+                let pair = trade.s
+                if (subs.indexOf(pair) > -1) {
+                    let amount = parseFloat(trade.q),
+                        price = parseFloat(trade.p)
+                    _onTrade(pair, amount, price)
+                }
+            }
         })
-        // - startup message
-        console.log("Binance WebSocket open.")
-        setTimeout(() => {
-            console.log("Now collecting and storing candle data.")
-        }, 3000)
+        _startupMessage(EXCHANGE)
     })
 }
 
 // script
 _outLog()
-_getSubs()
+_getSubs(PAIRSFILE)
 _openWebSocket()
 // - messages from initializing WS will appear here
 
@@ -211,6 +223,6 @@ _openWebSocket()
 setInterval(() => {
     // save candles and refresh subscriptions every SAVE_INTERVAL
     _outLog()
-    _saveCandles()
-    _getSubs()
+    _saveCandles(EXCHANGE)
+    _getSubs(PAIRSFILE)
 }, SAVE_INTERVAL * 1000)
