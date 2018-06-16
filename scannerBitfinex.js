@@ -24,6 +24,14 @@ v1.0
     /- when logging an error do the same format as poloniex
     /- when the websocket is closed, do a timeout to reopen after 1 second
     /- when WS is closed, use same response format as Gdax and Poloniex
+    v1.0.8
+    /- add PAIRSFILE and EXCHANGE
+    /- add _startupMessage and use when WS open
+    /- use PAIRSFILE in _getSubs
+    /- copy _saveCandles from scannerBinance and start sending EXCHANGE to it
+    /- copy _onTrade from scannerGdax and call in onTradeEntry
+    /- redo the WS programming to function like Binance and Gdax rather than
+       Poloniex (see notesRyan)
 
 */
 
@@ -36,9 +44,11 @@ const PACKAGE = JSON.parse(fs.readFileSync('package.json')),
     VERSION = PACKAGE.version,
     SAVE_INTERVAL = 15, // candle size in seconds
     LOG_INTERVAL = 60*60*24, // hr output period in seconds
-    BITFINEX = (new Bitfinex()).ws(),
-    TS_START = (new Date()).getTime() // starting time in ms
-var tsLast = {}, // object storing last timestamp for each pair
+    TS_START = (new Date()).getTime(), // starting time in ms
+    PAIRSFILE = "pairsBitfinex.json", // name of file where pairs are stored
+    EXCHANGE = "Bitfinex" // exchange name
+var BITFINEX = new Bitfinex(),
+    tsLast = {}, // object storing last timestamp for each pair
     tsLastLog = 0, // integer storing the timestamp of the last log update
     priceLast = {}, // object storing last price for each pair
     trades = {}, // object containing lists of trades used to compile the next candles
@@ -65,10 +75,17 @@ function _outLog() {
     tsLastLog = ts
 }
 
-function _getSubs() {
+function _startupMessage(exchange) {
+    console.log(`${exchange} WebSocket open.`)
+    setTimeout(() => {
+        console.log("Now collecting and storing candle data.")
+    }, 3000)
+}
+
+function _getSubs(filename) {
     // update subscriptions from json file
     // - get pairs from json then newSubs from pairs
-    let pairs = JSON.parse(fs.readFileSync('pairsBitfinex.json')),
+    let pairs = JSON.parse(fs.readFileSync(filename)),
         newSubs = [],
         pairToCurrencyPair = {}
     for (base in pairs) {
@@ -88,7 +105,6 @@ function _getSubs() {
         let pair = subs[i],
             currencyPair = pairToCurrencyPair[pair]
         if (newSubs.indexOf(pair) < 0) {
-            if (BITFINEX.isOpen()) BITFINEX.unsubscribeTrades(pair)
             delete trades[pair]
             delete tsLast[pair]
             delete priceLast[pair]
@@ -104,14 +120,13 @@ function _getSubs() {
             trades[pair] = []
             tsLast[pair] = (new Date()).getTime()
             priceLast[pair] = 0
-            if (BITFINEX.isOpen()) BITFINEX.subscribeTrades(pair)
             subs.push(pair)
             console.log(`Subscribed to ${pair}.`)
         }
     }
 }
 
-function _saveCandles() {
+function _saveCandles(exchange) {
     // convert trade data to candles and save to storage
     // - backup trades, reset trades
     let tradeData = {}
@@ -159,7 +174,7 @@ function _saveCandles() {
             month = date.getMonth() + 1,
             year = date.getFullYear(),
             path = "",
-            items = ["Data/", "Bitfinex/", `${pair}/`, `${year}/`],
+            items = [`Data/`, `${exchange}/`, `${pair}/`, `${year}/`],
             filename = `${month}-${day}.csv`
         // make sure path exists one level at a time
         for (i in items) {
@@ -173,50 +188,62 @@ function _saveCandles() {
 }
 
 // initialize websocket
-function _openWebSocket() {
-    BITFINEX.open()
-}
-
-BITFINEX.on('error', (err) => {
-    console.log("Error:")
-    console.log(err)
-})
-
-BITFINEX.on('open', () => {
-    console.log("Bitfinex WebSocket open.")
-    for (i in subs) {
-        let pair = subs[i]
-        BITFINEX.subscribeTrades(pair)
-    }
-    // - startup message
-    setTimeout(() => {
-        console.log("Now collecting and storing candle data.")
-    }, 3000)
-})
-
-BITFINEX.on('close', (res) => {
-    console.log("Bitfinex WebSocket closed.")
-    if (res == undefined) res = "No response from server."
-    console.log(res)
-    console.log("Trying to reopen the WebSocket...")
-    setTimeout(() => _openWebSocket(), 1000)
-})
-
-BITFINEX.onTradeEntry({}, (data, info) => {
-    let pair = info.pair,
-        trade = data[0],
-        amount = Math.abs(trade[2]),
-        price = trade[3]
+function _onTrade(pair, amount, price) {
     trades[pair].push({
         amount: amount,
         price: price
     })
     priceLast[pair] = price
-})
+}
+
+function _setWSMethods(WS) {
+    WS.on('error', (err) => {
+        console.log("Error:")
+        console.log(err)
+    })
+
+    WS.on('open', () => {
+        _startupMessage(EXCHANGE)
+    })
+
+    WS.on('close', (res) => {
+        console.log("Gdax WebSocket closed.")
+        if (res == undefined) res = "No response from server."
+        console.log(res)
+        console.log("Trying to reopen the WebSocket...")
+        setTimeout(() => _openWebSocket(), 1000)
+    })
+
+    WS.onTradeEntry({}, (data, info) => {
+        let pair = info.pair
+        if (subs.indexOf(pair) > -1) {
+            let trade = data[0],
+                amount = Math.abs(trade[2]),
+                price = trade[3]
+            _onTrade(pair, amount, price)
+        }
+    })
+}
+
+function _openWebSocket() {
+    BITFINEX = (new Bitfinex()).rest()
+    // get a list of pairs
+    BITFINEX.symbols((err, symbols) => {
+        if (err) throw err
+        for (i in symbols) symbols[i] = symbols[i].toUpperCase()
+        // set up WS
+        BITFINEX = (new Bitfinex()).ws()
+        _setWSMethods(BITFINEX)
+        BITFINEX.on('open', () => {
+            for (i in symbols) BITFINEX.subscribeTrades(symbols[i])
+        })
+        BITFINEX.open()
+    })
+}
 
 // script
 _outLog()
-_getSubs()
+_getSubs(PAIRSFILE)
 _openWebSocket()
 // - messages from initializing WS will appear here
 
@@ -224,6 +251,6 @@ _openWebSocket()
 setInterval(() => {
     // save candles and refresh subscriptions every SAVE_INTERVAL
     _outLog()
-    _saveCandles()
-    _getSubs()
+    _saveCandles(EXCHANGE)
+    _getSubs(PAIRSFILE)
 }, SAVE_INTERVAL * 1000)
