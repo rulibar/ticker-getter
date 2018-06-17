@@ -1,8 +1,8 @@
 {
     "name": "ticker-getter-1",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "description": "Cycles through pairs, monitors trade activity, compiles candle data, and saves to a text file.",
-    "main": "scannerPoloniex.js",
+    "main": "",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
