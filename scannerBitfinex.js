@@ -4,7 +4,7 @@ Description: A candle data compiler and saver for Bitfinex exchange. Periodicall
 cycles through the pairs in pairsBitfinex.json, compile candle data, and store to
 the Data file. See README.md
 
-v1.0
+v1.1    
 
 */
 
