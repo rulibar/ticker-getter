@@ -151,3 +151,15 @@ know how the subscribe and unsubscribe methods work for each exchange.
 I converted Bitfinex and Poloniex to be more similar to Binance and Gdax and I
 moved all of the similar functions and vars to a repository called tgLib.
 (v1.0.9)
+
+## 2018-06-19
+
+Seems like everything is working fine. I'm ready to go to v1.1 and start
+collecting for real, or at least make my first attempt at collecting for real.
+
+I have some small changes I want to make.. but I think I'll refrain from making
+them because the current version is tried and tested. I'll save them for v1.2.
+
+I'm going to change the name to ticker-getter instead of ticker-getter-1 and
+update to v1.1. I'll also end this notes file here and create a new notes file
+for v1.1 notes.
