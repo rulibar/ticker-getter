@@ -2,25 +2,7 @@
 tgLib.js
 Description: Store common vars and functions from TG
 
-v1.0
-    v1.0.9
-    /- set up header and labels
-    /- import fs, add PACKAGE, NAME, PACKAGE, TS_START
-    /- add _outLog as outLog
-    /- move over tsLastLog var
-    /- add _startupMessage as startupMessage
-    /- add pairToPairId and pairIdToPair vars
-    /- add SAVE_INTERVAL and LOG_INTERVAL, export SAVE_INTERVAL
-    /- add _getSubs as getSubs
-    /- remove currencyPairToPair from _getSubs
-    /- stop defining currencyPair in _getSubs
-    /- add subs and export as subs
-    /- add _saveCandles as saveCandles
-    /- add tsLast, priceLast and trades and export latter 2
-    /- add _onTrade as onTrade
-    /- stop exporting priceLast and trades
-    /- start exporting pairToPairId and pairIdToPair
-    /- say "unsubscribed from" instead of "removed subscription to"
+v1.1
 
 */
 
