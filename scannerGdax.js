@@ -4,30 +4,7 @@ Description: A candle data compiler and saver for Gdax exchange. Periodically
 cycles through the pairs in pairsGdax.json, compile candle data, and store to
 the Data file. See README.md
 
-v1.0
-    v1.0.7
-    /- copy over scannerBitfinex and modify header
-    /- copy and modify pairsBitfinex to pairsGdax.json
-    /- install gdax in npm
-    /- add pairToPairId and pairIdToPair to track relationships between pairs
-       and IDs used by the exchange. Set this up when opening WS
-    /- complete the functionality by using the other scanners as reference
-    v1.0.8
-    /- add EXCHANGE
-    /- copy _startupMessage from scannerBinance and use when WS open
-    /- copy _saveCandles from scannerBinance and send EXCHANGE to it
-    /- add PAIRSFILE to track name of pairs file
-    /- use PAIRSFILE as argument in _getSubs()
-    /- add _onTrade to handle the WS trade data we care about
-    v1.0.9
-    /- import tgLib as lib
-    /- remove PACKAGE, NAME, VERSION, SAVE_INTERVAL, LOG_INTERVAL, TS_START
-    /- remove tsLast, tsLastLog, priceLast, trades, subs, pairToPairId,
-       and pairIdToPair
-    /- remove _outLog, _startupMessage, _getSubs, _saveCandles, _onTrade
-    /- replace all with corresponding from lib
-    /- rename _openWebSocket to openWS and _setWSMethods to setWSMethods
-    /- stop importing fs
+v1.1
 
 */
 
