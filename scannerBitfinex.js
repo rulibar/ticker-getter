@@ -5,49 +5,6 @@ cycles through the pairs in pairsBitfinex.json, compile candle data, and store t
 the Data file. See README.md
 
 v1.0
-    v1.0.6
-    /- creation of scannerBitfinex.js and pairsBitfinex.json
-    /- add version control to scannerBinance.js header
-    /- add the same pairs to pairsBitfinex as pairsBinance (USD instead of USDT)
-    /- copy scannerBinance code
-    /- replace Binance and BINANCE to Bitfinex and BITFINEX
-    /- install bitfinex-api-node into package.
-    /- import pairsBitfinex instead of pairsBinance
-    /- change Binance/ to Bitfinex/ in _saveCandles
-    /- clear out initialize websocket section and redo for Bitfinex similar to
-       Poloneix
-    /- subscribe and unsubscribe from WS trade data in _getSubs but only when
-       the WS is open
-    /- when WS is opened, subscribe to all pairs in subs to make up for not
-       doing so in _getSubs
-    v1.0.7
-    /- when logging an error do the same format as poloniex
-    /- when the websocket is closed, do a timeout to reopen after 1 second
-    /- when WS is closed, use same response format as Gdax and Poloniex
-    v1.0.8
-    /- add PAIRSFILE and EXCHANGE
-    /- add _startupMessage and use when WS open
-    /- use PAIRSFILE in _getSubs
-    /- copy _saveCandles from scannerBinance and start sending EXCHANGE to it
-    /- copy _onTrade from scannerGdax and call in onTradeEntry
-    /- redo the WS programming to function like Binance and Gdax rather than
-       Poloniex (see notesRyan)
-    v1.0.9
-    /- fix bug where it says Gdax WS closed
-    /- import ./tgLib.js
-    /- store PACKAGE, NAME, VERSION, TS_START in tgLib
-    /- store _outLog in tgLib as outLog
-    /- most var tsLastLog to tgLib
-    /- move _startupMessage to tgLib as startupMessage
-    /- move over LOG_INTERVAL
-    /- move over SAVE_INTERVAL
-    /- move over _getSubs and call from lib
-    /- move over _saveCandles and call from lib
-    /- move over subs and import with lib
-    /- move over _onTrade function as onTrade
-    /- rename _openWebSocket to openWS
-    /- rename _setWSMethods to setWSMethods
-    /- stop importing fs
 
 */
 
