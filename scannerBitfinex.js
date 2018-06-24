@@ -4,7 +4,13 @@ Description: A candle data compiler and saver for Bitfinex exchange. Periodicall
 cycles through the pairs in pairsBitfinex.json, compile candle data, and store to
 the Data file. See README.md
 
-v1.1    
+v1.1
+    v1.1.1
+    /- use EXCHANGE in WS closed message instead of typing explicitly
+    /- stop saying no response from server when WS closed
+    /- combine log outputs into one line when WS closed
+    /- replace log messages with the new lib.outMsg(str) to add a timestamp
+    /- only log err if there was actually an error
 
 */
 
@@ -19,8 +25,8 @@ var BITFINEX = new Bitfinex()
 // initialize websocket
 function setWSMethods(WS) {
     WS.on('error', (err) => {
-        console.log("Error:")
-        console.log(err)
+        lib.outMsg("Error!")
+        if (err) console.log(err)
     })
 
     WS.on('open', () => {
@@ -28,10 +34,7 @@ function setWSMethods(WS) {
     })
 
     WS.on('close', (res) => {
-        console.log("Bitfinex WebSocket closed.")
-        if (res == undefined) res = "No response from server."
-        console.log(res)
-        console.log("Trying to reopen the WebSocket...")
+        lib.outMsg(`${EXCHANGE} WebSocket closed. Trying to reconnect...`)
         setTimeout(() => openWS(), 1000)
     })
 
