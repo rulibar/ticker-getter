@@ -5,6 +5,11 @@ cycles through the pairs in pairsPoloniex.json, compile candle data, and store t
 the Data file. See README.md
 
 v1.1
+    v1.1.1
+    /- use EXCHANGE in WS closed message instead of typing explicitly
+    /- replace log messages with the new lib.outMsg(str) to add a timestamp
+    /- add a try/catch to error handling for converting to string and checking
+       error type
 
 */
 
@@ -20,15 +25,18 @@ var POLONIEX = new Poloniex()
 // initialize WS
 function setWSMethods(WS) {
     WS.on('error', (err) => {
-        console.log("Error:")
-        console.log(err)
-        if (err.indexOf("statusCode: 522") > -1) {
-            console.log("WS failed to open. Retrying...")
-            setTimeout(() => openWS(), 1000)
-        } else if (err.indexOf("statusCode: 502") > -1) {
-            console.log("WS failed to open. Retrying...")
-            setTimeout(() => openWS(), 1000)
-        }
+        lib.outMsg("Error!")
+        if (err) console.log(err)
+        try {
+            err = JSON.stringify(err)
+            if (err.indexOf("statusCode: 522") > -1) {
+                lib.outMsg("WS failed to open. Retrying...")
+                setTimeout(() => openWS(), 1000)
+            } else if (err.indexOf("statusCode: 502") > -1) {
+                lib.outMsg("WS failed to open. Retrying...")
+                setTimeout(() => openWS(), 1000)
+            }
+        } catch (err) {console.log(err)}
     })
 
     WS.on('open', () => {
@@ -36,10 +44,10 @@ function setWSMethods(WS) {
     })
 
     WS.on('close', (res) => {
-        console.log("Gdax WebSocket closed.")
+        lib.outMsg(`${EXCHANGE} WebSocket closed.`)
         if (res == undefined) res = "No response from server."
-        console.log(res)
-        console.log("Trying to reopen the WebSocket...")
+        if (res) console.log(res)
+        lib.outMsg("Trying to reopen the WebSocket...")
         setTimeout(() => openWS(), 1000)
     })
 
