@@ -3,6 +3,10 @@ tgLib.js
 Description: Store common vars and functions from TG
 
 v1.1
+    v1.1.1
+    /- add outMsg() to send messages to log so that I can add a timestamp
+      before messages. Not planning on using with hr
+    /- change some strings to `` form instead of "" just for consistency
 
 */
 
@@ -26,7 +30,7 @@ var tsLast = {}, // object storing last timestamp for each pair
 
 // functions
 function outLog() {
-    let hr = "#############",
+    let hr = `#############`,
         ts = (new Date()).getTime(),
         timeRunning = ts - TS_START,
         daysRunning = timeRunning / (1000 * 60 * 60 * 24),
@@ -35,7 +39,7 @@ function outLog() {
     if (tsLastLog == 0) {
         hr = `${hr} ${NAME} v${VERSION} started up ${hr}`
     } else {
-        hr += "#####"
+        hr += `#####`
         if (timeSinceLast/1000 > LOG_INTERVAL) {
             hr = `${hr} days since start: ${daysRunning.toFixed(2)} ${hr}`
         } else return
@@ -45,10 +49,27 @@ function outLog() {
     tsLastLog = ts
 }
 
+function outMsg(msg) {
+    let date = new Date(),
+        timeArr = [
+            date.getHours(),
+            date.getMinutes(),
+            date.getSeconds()
+        ],
+        time = ""
+    for (let i in timeArr) {
+        timeArr[i] = "" + timeArr[i]
+        if (timeArr[i].length == 1) timeArr[i] = "0" + timeArr[i]
+        if (i != 2) timeArr[i] += ":"
+        time += timeArr[i]
+    }
+    console.log(time + " - " + msg)
+}
+
 function startupMessage(exchange) {
-    console.log(`${exchange} WebSocket open.`)
+    outMsg(`${exchange} WebSocket open.`)
     setTimeout(() => {
-        console.log("Now collecting and storing candle data.")
+        outMsg(`Now collecting and storing candle data.`)
     }, 3000)
 }
 
@@ -75,7 +96,7 @@ function getSubs(filename) {
             delete tsLast[pair]
             delete priceLast[pair]
             subs.splice(i, 1)
-            console.log(`Unsubscribed from ${pair}.`)
+            outMsg(`Unsubscribed from ${pair}.`)
         }
     }
     // -- add new subs
@@ -86,7 +107,7 @@ function getSubs(filename) {
             tsLast[pair] = (new Date()).getTime()
             priceLast[pair] = 0
             subs.push(pair)
-            console.log(`Subscribed to ${pair}.`)
+            outMsg(`Subscribed to ${pair}.`)
         }
     }
 }
@@ -166,6 +187,7 @@ module.exports = {
     pairToPairId: pairToPairId,
     pairIdToPair: pairIdToPair,
     outLog: outLog,
+    outMsg: outMsg,
     startupMessage: startupMessage,
     getSubs: getSubs,
     saveCandles: saveCandles,
