@@ -10,6 +10,7 @@ v1.1
     /- replace log messages with the new lib.outMsg(str) to add a timestamp
     /- add a try/catch to error handling for converting to string and checking
        error type
+    /- handle the seemingly random ETIMEDOUT error
 
 */
 
@@ -26,8 +27,9 @@ var POLONIEX = new Poloniex()
 function setWSMethods(WS) {
     WS.on('error', (err) => {
         lib.outMsg("Error!")
-        if (err) console.log(err)
         try {
+            if (err.code == 'ETIMEDOUT') throw "ETIMEDOUT error."
+            if (err) console.log(err)
             err = JSON.stringify(err)
             if (err.indexOf("statusCode: 522") > -1) {
                 lib.outMsg("WS failed to open. Retrying...")
