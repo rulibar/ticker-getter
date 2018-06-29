@@ -11,6 +11,10 @@ v1.1
     /- add a try/catch to error handling for converting to string and checking
        error type
     /- handle the seemingly random ETIMEDOUT error
+    v1.1.2
+    /- stop redefining POLONIEX in openWS() (because I think it's unnecessary)
+    /- handle errors in returnTicker in openWS() (in case of no internet or
+       some other error.)
 
 */
 
@@ -38,7 +42,7 @@ function setWSMethods(WS) {
                 lib.outMsg("WS failed to open. Retrying...")
                 setTimeout(() => openWS(), 1000)
             }
-        } catch (err) {console.log(err)}
+        } catch (err) { console.log(err) }
     })
 
     WS.on('open', () => {
@@ -70,10 +74,15 @@ function setWSMethods(WS) {
 }
 
 function openWS() {
-    POLONIEX = new Poloniex()
+    //POLONIEX = new Poloniex()
     // get a list of pairs
     POLONIEX.returnTicker((err, ticker) => {
-        if (err) throw err
+        if (err) {
+            lib.outMsg("Error!")
+            console.log(err)
+            lib.outMsg("WS failed to open. Retrying...")
+            setTimeout(() => { openWS() }, 1000); return
+        }
         let pairIds = Object.keys(ticker)
         for (i in pairIds) {
             let pairId = pairIds[i],
@@ -86,7 +95,7 @@ function openWS() {
             POLONIEX.subscribe(pairId)
         }
         setWSMethods(POLONIEX)
-        POLONIEX.openWebSocket({version: 2})
+        POLONIEX.openWebSocket({ version: 2 })
     })
 }
 
