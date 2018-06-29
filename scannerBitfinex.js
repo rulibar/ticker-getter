@@ -11,6 +11,11 @@ v1.1
     /- combine log outputs into one line when WS closed
     /- replace log messages with the new lib.outMsg(str) to add a timestamp
     /- only log err if there was actually an error
+    v1.1.2
+    /- handle errors in BITFINEX.symbols in openWS() (in case of no internet or
+       some other error.)
+       /- retry connection after 30 seconds instead of 1 second since Bitfinex
+          only allows like 5 requests in 60 seconds
 
 */
 
@@ -53,7 +58,12 @@ function openWS() {
     BITFINEX = (new Bitfinex()).rest()
     // get a list of pairs
     BITFINEX.symbols((err, symbols) => {
-        if (err) throw err
+        if (err) {
+            lib.outMsg("Error!")
+            console.log(err)
+            lib.outMsg("WS failed to open. Retrying...")
+            setTimeout(() => openWS(), 30 * 1000); return
+        }
         for (i in symbols) symbols[i] = symbols[i].toUpperCase()
         // set up WS
         BITFINEX = (new Bitfinex()).ws()
