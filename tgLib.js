@@ -7,6 +7,9 @@ v1.1
     /- add outMsg() to send messages to log so that I can add a timestamp
       before messages. Not planning on using with hr
     /- change some strings to `` form instead of "" just for consistency
+    v1.1.2
+    /- Add PATH_TO_DATA so that I can change where data is stored based on the
+       circumstance
 
 */
 
@@ -17,6 +20,7 @@ var fs = require('fs')
 const PACKAGE = JSON.parse(fs.readFileSync('package.json')),
     NAME = PACKAGE.name,
     VERSION = PACKAGE.version,
+    PATH_TO_DATA = "" // location of the Data/ folder
     SAVE_INTERVAL = 15, // candle size in seconds
     LOG_INTERVAL = 60*60*24, // hr output period in seconds
     TS_START = (new Date()).getTime() // starting time in ms
@@ -159,7 +163,7 @@ function saveCandles(exchange) {
             day = date.getDate(),
             month = date.getMonth() + 1,
             year = date.getFullYear(),
-            path = "",
+            path = PATH_TO_DATA,
             items = [`Data/`, `${exchange}/`, `${pair}/`, `${year}/`],
             filename = `${month}-${day}.csv`
         // make sure path exists one level at a time
