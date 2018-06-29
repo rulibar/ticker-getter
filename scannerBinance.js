@@ -5,6 +5,9 @@ cycles through the pairs in pairsBinance.json, compile candle data, and store to
 the Data file. See README.md
 
 v1.1
+    v1.1.2
+    /- handle errors in BINANCE.prices in openWS() (in case of no internet or
+       some other error.)
 
 */
 
@@ -18,9 +21,15 @@ var BINANCE = new Binance()
 
 // initialize websocket
 function openWS() {
+    //BINANCE = new Binance()
     // get a list of pairs
     BINANCE.prices((err, ticker) => {
-        if (err) throw err
+        if (err) {
+            lib.outMsg("Error!")
+            console.log(err)
+            lib.outMsg("WS failed to open. Retrying...")
+            setTimeout(() => { openWS() }, 1000); return
+        }
         // set up WS
         BINANCE.websockets.trades(Object.keys(ticker), (trade) => {
             if (trade.e == "trade") {
