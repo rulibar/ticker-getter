@@ -16,75 +16,77 @@ v1.1
        some other error.)
        /- retry connection after 30 seconds instead of 1 second since Bitfinex
           only allows like 5 requests in 60 seconds
+    v1.1.3
+    /- add semicolons to make sure I'm using proper javascript syntax
 
 */
 
 // imports
 var lib = require('./tgLib'),
-    Bitfinex = require('bitfinex-api-node')
+    Bitfinex = require('bitfinex-api-node');
 
 const PAIRSFILE = "pairsBitfinex.json", // name of file where pairs are stored
-    EXCHANGE = "Bitfinex" // exchange name
-var BITFINEX = new Bitfinex()
+    EXCHANGE = "Bitfinex"; // exchange name
+var BITFINEX = new Bitfinex();
 
 // initialize websocket
 function setWSMethods(WS) {
     WS.on('error', (err) => {
-        lib.outMsg("Error!")
-        if (err) console.log(err)
-    })
+        lib.outMsg("Error!");
+        if (err) console.log(err);
+    });
 
     WS.on('open', () => {
-        lib.startupMessage(EXCHANGE)
-    })
+        lib.startupMessage(EXCHANGE);
+    });
 
     WS.on('close', (res) => {
-        lib.outMsg(`${EXCHANGE} WebSocket closed. Trying to reconnect...`)
-        setTimeout(() => openWS(), 1000)
-    })
+        lib.outMsg(`${EXCHANGE} WebSocket closed. Trying to reconnect...`);
+        setTimeout(() => openWS(), 1000);
+    });
 
     WS.onTradeEntry({}, (data, info) => {
-        let pair = info.pair
+        let pair = info.pair;
         if (lib.subs.indexOf(pair) > -1) {
             let trade = data[0],
                 amount = Math.abs(trade[2]),
-                price = trade[3]
-            lib.onTrade(pair, amount, price)
+                price = trade[3];
+            lib.onTrade(pair, amount, price);
         }
-    })
+    });
 }
 
 function openWS() {
-    BITFINEX = (new Bitfinex()).rest()
+    BITFINEX = (new Bitfinex()).rest();
     // get a list of pairs
     BITFINEX.symbols((err, symbols) => {
         if (err) {
-            lib.outMsg("Error!")
-            console.log(err)
-            lib.outMsg("WS failed to open. Retrying...")
-            setTimeout(() => openWS(), 30 * 1000); return
+            lib.outMsg("Error!");
+            console.log(err);
+            lib.outMsg("WS failed to open. Retrying...");
+            setTimeout(() => openWS(), 30 * 1000); return;
         }
-        for (i in symbols) symbols[i] = symbols[i].toUpperCase()
+        for (i in symbols) symbols[i] = symbols[i].toUpperCase();
         // set up WS
-        BITFINEX = (new Bitfinex()).ws()
-        setWSMethods(BITFINEX)
+        BITFINEX = (new Bitfinex()).ws();
+        setWSMethods(BITFINEX);
         BITFINEX.on('open', () => {
-            for (i in symbols) BITFINEX.subscribeTrades(symbols[i])
-        })
-        BITFINEX.open()
-    })
+            for (i in symbols) BITFINEX.subscribeTrades(symbols[i]);
+        });
+        BITFINEX.open();
+    });
 }
 
 // script
-lib.outLog()
-lib.getSubs(PAIRSFILE)
-openWS()
+lib.outLog();
+lib.getSubs(PAIRSFILE);
+openWS();
 // - messages from initializing WS will appear here
 
 // - start collecting
 setInterval(() => {
     // save candles and refresh subscriptions every SAVE_INTERVAL
-    lib.outLog()
-    lib.saveCandles(EXCHANGE)
-    lib.getSubs(PAIRSFILE)
-}, lib.SAVE_INTERVAL * 1000)
+    lib.outLog();
+    lib.saveCandles(EXCHANGE);
+    lib.getSubs(PAIRSFILE);
+}, lib.SAVE_INTERVAL * 1000);
