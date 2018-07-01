@@ -1,6 +1,6 @@
 {
     "name": "ticker-getter",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "description": "Cycles through pairs, monitors trade activity, compiles candle data, and saves to a csv file.",
     "main": "",
     "scripts": {
